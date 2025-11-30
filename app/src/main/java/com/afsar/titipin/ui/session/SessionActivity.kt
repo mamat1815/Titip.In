@@ -1,4 +1,4 @@
-package com.afsar.titipin.ui.screens
+package com.afsar.titipin.ui.session
 
 import android.os.Bundle
 import androidx.activity.ComponentActivity
@@ -12,19 +12,20 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
 import com.afsar.titipin.ui.theme.TitipInTheme
+import dagger.hilt.android.AndroidEntryPoint
 
-class MainActivity : ComponentActivity() {
+@AndroidEntryPoint
+class SessionActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         setContent {
             TitipInTheme {
-                Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
-                    Greeting(
-                        name = "Android",
-                        modifier = Modifier.padding(innerPadding)
-                    )
-                }
+
+                   CreateSessionScreen(
+                       onBackClick = { finish() },
+                   )
+
             }
         }
     }

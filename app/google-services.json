@@ -1,0 +1,47 @@
+{
+  "project_info": {
+    "project_number": "212927678912",
+    "project_id": "titipin-2741f",
+    "storage_bucket": "titipin-2741f.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:212927678912:android:03a88b7411d5098a6c2025",
+        "android_client_info": {
+          "package_name": "com.afsar.titipin"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "212927678912-qiejrbg022db0okcqh7997u6kobuhlue.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.afsar.titipin",
+            "certificate_hash": "8122a1249b085e0aa3b0bf42eabc46ae0227c834"
+          }
+        },
+        {
+          "client_id": "212927678912-b9njd6313nb1h8vmqm6tg9tuq8u5hcc0.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCX82hIHB6mNY5bzn5LfRd0Usjfao7--o0"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "212927678912-b9njd6313nb1h8vmqm6tg9tuq8u5hcc0.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

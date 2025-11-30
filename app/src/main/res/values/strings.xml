@@ -1,4 +1,11 @@
 <resources>
     <string name="app_name">Titip.In</string>
     <string name="title_activity_splash_screen">SplashScreen</string>
+    <string name="title_activity_register">RegisterActivity</string>
+    <string name="title_activity_login">LoginActivity</string>
+    <string name="title_activity_add_circle">AddCircleActivity</string>
+    <string name="title_activity_circle">CircleActivity</string>
+    <string name="title_activity_circle_detail">CircleDetailActivity</string>
+    <string name="title_activity_session">SessionActivity</string>
+    <string name="title_activity_titipan_detail">TitipanDetailActivity</string>
 </resources>

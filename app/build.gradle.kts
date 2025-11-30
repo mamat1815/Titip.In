@@ -2,6 +2,10 @@ plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
     alias(libs.plugins.kotlin.compose)
+    id("com.google.gms.google-services")
+    id("com.google.devtools.ksp")
+    id("com.google.dagger.hilt.android") // Hilt
+    id("kotlin-parcelize")
 }
 
 android {
@@ -39,6 +43,7 @@ android {
     buildFeatures {
         compose = true
     }
+
 }
 
 dependencies {
@@ -51,11 +56,32 @@ dependencies {
     implementation(libs.androidx.compose.ui.tooling.preview)
     implementation(libs.androidx.compose.material3)
 
-//    Navigation
+//Navigation
     implementation(libs.navigation.compose)
 
 //Icons
     implementation(libs.compose.material.icons.extended)
+
+//    Firebase
+    implementation(libs.play.services.auth)
+    implementation(platform(libs.firebase.bom))
+    implementation(libs.firebase.analytics)
+    implementation(libs.firebase.auth)
+    implementation(libs.androidx.credentials)
+    implementation(libs.androidx.credentials.play.services.auth)
+    implementation(libs.googleid)
+//DI
+    implementation(libs.hilt.android)
+    implementation(libs.firebase.firestore.ktx)
+    implementation(libs.play.services.location)
+    ksp(libs.hilt.compiler)
+    implementation(libs.androidx.hilt.navigation.compose)
+
+//    ImageURI
+    implementation("io.coil-kt:coil-compose:2.5.0")
+
+    implementation("com.google.maps.android:maps-compose:6.12.2")
+    implementation("com.google.android.gms:play-services-maps:19.2.0")
 
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
