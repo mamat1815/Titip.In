@@ -11,7 +11,13 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
-import com.afsar.titipin.ui.theme.TitipInTheme
+import androidx.navigation.NavHostController
+import androidx.navigation.compose.NavHost
+import androidx.navigation.compose.composable
+import androidx.navigation.compose.rememberNavController
+import com.afsar.titipin.ui.components.MainBottomNav
+import com.afsar.titipin.ui.components.RouteScreen
+import com.afsar.titipin.ui.screens.ui.theme.TitipInTheme
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -19,14 +25,42 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
         setContent {
             TitipInTheme {
-                Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
-                    Greeting(
-                        name = "Android",
+
+                val navController = rememberNavController()
+                Scaffold(
+                    modifier = Modifier.fillMaxSize(),
+                    bottomBar = { MainBottomNav(navController = navController) }
+                ) { innerPadding ->
+                    AppNavHost(
+                        navController = navController,
                         modifier = Modifier.padding(innerPadding)
                     )
                 }
             }
         }
+    }
+}
+
+
+@Composable
+fun AppNavHost(
+    navController: NavHostController,
+    modifier: Modifier = Modifier
+) {
+    NavHost(
+        navController = navController,
+        startDestination = RouteScreen.Home.route,
+        modifier = modifier
+    ) {
+
+        composable(RouteScreen.Home.route) {
+            HomeScreen()
+        }
+
+        composable(RouteScreen.Circles.route) {
+            CirclesScreen()
+        }
+
     }
 }
 
