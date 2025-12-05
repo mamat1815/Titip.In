@@ -44,7 +44,7 @@ fun CircleDetailScreen(
     viewModel: CircleDetailViewModel = hiltViewModel()
 ) {
     val circle = viewModel.circleState
-    val activeSession = viewModel.activeSession // Sesi yang sedang BUKA
+    val activeSession = viewModel.activeSession
     val sessionHistory = viewModel.sessionHistory // Sesi masa lalu
     val timerString = viewModel.remainingTime
     Scaffold(
@@ -65,7 +65,6 @@ fun CircleDetailScreen(
         } else {
             Column(modifier = Modifier.padding(padding)) {
 
-                // 1. STATUS CARD (Sekarang menerima object JastipSession)
                 ActiveSessionCard(
                     session = activeSession,
                     timerValue = timerString,
@@ -76,7 +75,6 @@ fun CircleDetailScreen(
                     }
                 )
 
-                // 2. TABS
                 var selectedTabIndex by remember { mutableIntStateOf(0) }
                 val tabs = listOf("Anggota (${circle.members.size})", "Riwayat Sesi")
 
@@ -87,7 +85,7 @@ fun CircleDetailScreen(
                     indicator = { tabPositions ->
                         TabRowDefaults.SecondaryIndicator(
                             Modifier.tabIndicatorOffset(tabPositions[selectedTabIndex]),
-                            color = Color(0xFF370061) // Ungu tema
+                            color = Color(0xFF370061)
                         )
                     }
                 ) {
@@ -125,22 +123,21 @@ fun CircleDetailScreen(
 }
 
 @Composable
-    fun ActiveSessionCard(session: JastipSession?,timerValue: String, onClick: () -> Unit ) {
-    // Jika ada sesi aktif -> Warna Ungu/Gradient
-    // Jika tidak ada -> Warna Abu
-    val isActive = session != null
+fun ActiveSessionCard(session: JastipSession?, timerValue: String, onClick: () -> Unit) {
+    val isSessionExists = session != null
+    val isOpen = session?.status == "open"
 
-    val bgBrush = if (isActive) {
+    val bgBrush = if (isSessionExists && isOpen) {
         Brush.horizontalGradient(listOf(Color(0xFF370061), Color(0xFF5E35B1))) // Ungu Premium
     } else {
-        Brush.horizontalGradient(listOf(Color(0xFFCFD8DC), Color(0xFFB0BEC5))) // Abu-abu
+        Brush.horizontalGradient(listOf(Color(0xFF757575), Color(0xFF9E9E9E))) // Abu-abu Gelap
     }
 
     Card(
         modifier = Modifier
             .fillMaxWidth()
             .padding(16.dp)
-            .clickable(enabled = isActive) {
+            .clickable(enabled = isSessionExists) {
                 onClick()
             },
         shape = RoundedCornerShape(16.dp),
@@ -152,25 +149,35 @@ fun CircleDetailScreen(
                 .padding(20.dp)
                 .fillMaxWidth()
         ) {
-            if (isActive && session != null) {
-                // --- TAMPILAN JIKA ADA SESI ---
+            if (isSessionExists) {
+                // --- TAMPILAN JIKA ADA SESI (OPEN / CLOSED) ---
                 Column {
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         // Badge Status
-                        Surface(color = Color(0xFF00E676), shape = RoundedCornerShape(4.dp)) {
+                        val badgeColor = if (isOpen) Color(0xFF00E676) else Color(0xFFE0E0E0) // Hijau / Abu Terang
+                        val badgeText = if (isOpen) "OPEN" else "SELESAI"
+                        val badgeTextColor = if (isOpen) Color.Black else Color.Gray
+
+                        Surface(color = badgeColor, shape = RoundedCornerShape(4.dp)) {
                             Text(
-                                "OPEN",
-                                color = Color.Black,
+                                text = badgeText,
+                                color = badgeTextColor,
                                 fontSize = 10.sp,
                                 fontWeight = FontWeight.Bold,
                                 modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
                             )
                         }
                         Spacer(modifier = Modifier.weight(1f))
+                        
+                        // Timer Icon & Text
                         Icon(Icons.Default.Timer, contentDescription = null, tint = Color.White, modifier = Modifier.size(16.dp))
                         Spacer(modifier = Modifier.width(4.dp))
                         Text(
-                            text = if(timerValue.isNotEmpty()) "$timerValue lagi" else "Selesai",
+                            text = if (isOpen) {
+                                if (timerValue.isNotEmpty()) "$timerValue lagi" else "Selesai"
+                            } else {
+                                "Berakhir"
+                            },
                             color = Color.White,
                             fontSize = 12.sp,
                             fontWeight = FontWeight.Bold
@@ -180,7 +187,7 @@ fun CircleDetailScreen(
                     Spacer(modifier = Modifier.height(12.dp))
 
                     Text(
-                        text = session.title, // "Mau titip apa?" atau Judul
+                        text = session.title,
                         color = Color.White,
                         fontWeight = FontWeight.Bold,
                         fontSize = 18.sp
@@ -192,7 +199,7 @@ fun CircleDetailScreen(
                         Icon(Icons.Default.Person, contentDescription = null, tint = Color.White.copy(0.8f), modifier = Modifier.size(14.dp))
                         Spacer(modifier = Modifier.width(4.dp))
                         Text(
-                            text = "Oleh: ${session.creatorName}", // Tampilkan Nama Pembuat
+                            text = "Oleh: ${session.creatorName}",
                             color = Color.White.copy(0.9f),
                             fontSize = 14.sp
                         )
@@ -210,10 +217,13 @@ fun CircleDetailScreen(
                         )
                     }
                     Spacer(modifier = Modifier.height(12.dp))
-                    Text("Ketuk untuk melihat detail & pesan >", fontSize = 12.sp, color = Color(0xFFFFD54F), fontWeight = FontWeight.Bold)
+                    
+                    // Text Action
+                    val actionText = if (isOpen) "Ketuk untuk melihat detail & pesan >" else "Lihat rincian sesi >"
+                    Text(actionText, fontSize = 12.sp, color = Color(0xFFFFD54F), fontWeight = FontWeight.Bold)
                 }
             } else {
-                // --- TAMPILAN KOSONG ---
+                // --- TAMPILAN KOSONG (BELUM ADA SESI SAMA SEKALI) ---
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Icon(
                         imageVector = Icons.Default.ShoppingBag,
@@ -224,13 +234,13 @@ fun CircleDetailScreen(
                     Spacer(modifier = Modifier.width(16.dp))
                     Column {
                         Text(
-                            text = "Tidak Ada Sesi Aktif",
+                            text = "Belum Ada Sesi",
                             color = Color.White,
                             fontWeight = FontWeight.Bold,
                             fontSize = 18.sp
                         )
                         Text(
-                            text = "Tunggu temanmu buka sesi baru ya",
+                            text = "Jadilah yang pertama membuka jastip!",
                             color = Color.White.copy(alpha = 0.9f),
                             fontSize = 12.sp
                         )
@@ -241,7 +251,6 @@ fun CircleDetailScreen(
     }
 }
 
-// ... (Komponen MembersListContent dan SessionHistoryContent SAMA seperti sebelumnya) ...
 @Composable
 fun MembersListContent(circle: Circle) {
     LazyColumn(

@@ -1,6 +1,5 @@
 package com.afsar.titipin.data.remote
 
-
 import com.afsar.titipin.data.model.ChatMessage
 import com.afsar.titipin.data.model.Circle
 import com.afsar.titipin.data.model.CircleRequest
@@ -37,4 +36,5 @@ interface AuthRepository {
     fun getSessionChatMessages(sessionId: String): Flow<Result<List<ChatMessage>>>
     fun sendSessionChatMessage(sessionId: String, message: String): Flow<Result<Boolean>>
     fun getCurrentUserUid(): String?
+    fun updateSessionStatus(sessionId: String, newStatus: String): Flow<Result<Boolean>>
 }

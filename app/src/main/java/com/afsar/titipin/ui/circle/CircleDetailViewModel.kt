@@ -1,4 +1,5 @@
 package com.afsar.titipin.ui.circle
+
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
@@ -20,14 +21,11 @@ class CircleDetailViewModel @Inject constructor(
     savedStateHandle: SavedStateHandle
 ) : ViewModel() {
 
-    // --- STATE ---
     var circleState by mutableStateOf<Circle?>(null)
 
-    // Kita pisahkan Sesi Aktif dan Riwayat agar UI lebih mudah
     var activeSession by mutableStateOf<JastipSession?>(null)
     var sessionHistory by mutableStateOf<List<JastipSession>>(emptyList())
 
-    // State Timer
     var remainingTime by mutableStateOf("")
     private var timerJob: Job? = null
 
@@ -56,22 +54,19 @@ class CircleDetailViewModel @Inject constructor(
         viewModelScope.launch {
             repository.getCircleSessions(circleId).collect { result ->
                 result.onSuccess { allSessions ->
-                    // 1. Ambil semua sesi yang statusnya 'open'
-                    val openSessions = allSessions.filter { it.status == "open" }
+                    val latest = allSessions.maxByOrNull { it.createdAt }
 
-                    // 2. LOGIC SINGLE SESSION:
-                    // Jika ada error data (misal 2 sesi open), kita paksa ambil yang paling baru saja.
-                    // Ini memastikan di UI hanya ada 1 sesi yang berjalan.
-                    activeSession = openSessions.maxByOrNull { it.createdAt }
+                    activeSession = latest
 
-                    // 3. Sisanya masuk ke riwayat (termasuk sesi open yang 'kalah'/double)
                     sessionHistory = allSessions.filter { it.id != activeSession?.id }
 
-                    // 4. Jalankan Timer jika ada sesi aktif
-                    if (activeSession != null) {
+                    if (activeSession != null && activeSession?.status == "open") {
                         startTimer(activeSession!!)
                     } else {
                         stopTimer()
+                        if (activeSession != null) {
+                            remainingTime = "Selesai"
+                        }
                     }
                 }
                 result.onFailure {
@@ -81,9 +76,7 @@ class CircleDetailViewModel @Inject constructor(
         }
     }
 
-    // --- LOGIC TIMER HITUNG MUNDUR ---
     private fun startTimer(session: JastipSession) {
-        // Cancel timer lama jika ada
         timerJob?.cancel()
 
         timerJob = viewModelScope.launch {
@@ -101,10 +94,15 @@ class CircleDetailViewModel @Inject constructor(
                         remainingTime = String.format("%02d:%02d", minutes, seconds)
                     } else {
                         remainingTime = "00:00"
-                        // Waktu habis
+                        val currentUid = repository.getCurrentUserUid()
+                        if (currentUid == session.creatorId && session.status == "open") {
+                            repository.updateSessionStatus(session.id, "closed").collect {
+                                // Status updated
+                            }
+                        }
                         break
                     }
-                    delay(1000) // Update setiap 1 detik
+                    delay(1000)
                 } catch (e: Exception) {
                     remainingTime = "00:00"
                     break

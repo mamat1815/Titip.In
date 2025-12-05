@@ -1,31 +1,56 @@
 package com.afsar.titipin.ui.buy
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.Chat
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Chat
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.LocationOn
-import androidx.compose.material.icons.filled.Person
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.Divider
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.ExtendedFloatingActionButton
+import androidx.compose.material3.FilterChip
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
+import androidx.compose.material3.TopAppBar
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -39,10 +64,9 @@ import com.afsar.titipin.data.model.JastipSession
 fun SessionDetailScreen(
     session: JastipSession,
     onBackClick: () -> Unit,
-    onGoToShoppingList: () -> Unit, // Navigasi ke Halaman Belanja
+    onGoToShoppingList: () -> Unit,
     viewModel: TitipankuViewModel = hiltViewModel()
 ) {
-    // Load data detail saat masuk
     LaunchedEffect(session) { viewModel.loadSessionDetail(session) }
     var showAddOrderDialog by remember { mutableStateOf(false) }
 
@@ -81,7 +105,6 @@ fun SessionDetailScreen(
         bottomBar = {
             val acceptedCount = viewModel.orders.count { it.status == "accepted" }
 
-            // Teks tombol beda tergantung peran, tapi fungsinya sama: Buka halaman Chat/List
             val buttonText = if (isCreator) {
                 "Lihat Daftar Belanja ($acceptedCount Item)"
             } else {
@@ -96,7 +119,6 @@ fun SessionDetailScreen(
                     .height(50.dp),
                 colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF370061))
             ) {
-                // Tambahkan ikon chat agar user tahu di sana ada fitur chat
                 Icon(Icons.Default.Chat, contentDescription = null, modifier = Modifier.size(18.dp))
                 Spacer(modifier = Modifier.width(8.dp))
                 Text(buttonText)
@@ -129,7 +151,7 @@ fun SessionDetailScreen(
             items(viewModel.orders) { order ->
                 RequestItemCard(
                     order = order,
-                    isCreator = isCreator, // <-- KIRIM STATUS PERAN KE CARD
+                    isCreator = isCreator,
                     currentUserId = viewModel.currentUserId,
                     onAccept = { viewModel.updateOrderStatus(order.id, "accepted") },
                     onReject = { viewModel.updateOrderStatus(order.id, "rejected") }
@@ -175,7 +197,7 @@ fun HeaderSessionCard(session: JastipSession) {
 }
 
 @Composable
-fun TimerSection(timeString: String, isRevision: Boolean  ,  showFinishButton: Boolean, // Param baru
+fun TimerSection(timeString: String, isRevision: Boolean  ,  showFinishButton: Boolean,
                  onFinishClick: () -> Unit) {
     Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.fillMaxWidth()) {
         Text("Sesi ditutup dalam:", color = Color.Gray, fontSize = 12.sp)
@@ -244,7 +266,7 @@ fun TimerBox(value: String) {
 @Composable
 fun RequestItemCard(
     order: JastipOrder,
-    isCreator: Boolean, // Param baru
+    isCreator: Boolean,
     currentUserId: String,
     onAccept: () -> Unit,
     onReject: () -> Unit
@@ -257,7 +279,6 @@ fun RequestItemCard(
         shape = RoundedCornerShape(16.dp)
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
-            // Header User
             Row(verticalAlignment = Alignment.CenterVertically) {
                 AsyncImage(
                     model = ImageRequest.Builder(LocalContext.current).data(order.requesterPhotoUrl).build(),
@@ -286,23 +307,30 @@ fun RequestItemCard(
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            // --- LOGIKA TOMBOL AKSI ---
-
             if (order.status == "pending") {
                 if (isCreator) {
-                    // JASTIPER: Lihat tombol Terima/Tolak
                     Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                         OutlinedButton(onClick = onReject, modifier = Modifier.weight(1f), colors = ButtonDefaults.outlinedButtonColors(contentColor = Color.Red)) { Text("Tolak") }
                         Button(onClick = onAccept, modifier = Modifier.weight(1f), colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF370061))) { Text("Terima") }
                     }
                 } else {
-                    // PENITIP: Lihat status menunggu
                     Text("Menunggu konfirmasi...", color = Color(0xFFFF9800), fontSize = 12.sp, fontStyle = androidx.compose.ui.text.font.FontStyle.Italic)
                 }
             } else {
-                // Status sudah Accepted/Rejected
-                val statusText = if (order.status == "accepted") "Permintaan Diterima" else "Permintaan Ditolak"
-                val statusColor = if (order.status == "accepted") Color(0xFF2E7D32) else Color.Red
+                val statusText = when (order.status) {
+                    "accepted" -> "Permintaan Diterima"
+                    "rejected" -> "Permintaan Ditolak"
+                    "bought" -> "Pesanan Dibeli"
+                    else -> "Menunggu Konfirmasi"
+                }
+
+                val statusColor = when (order.status) {
+                    "accepted" -> Color(0xFF2E7D32)
+                    "rejected" -> Color.Red
+                    "bought" -> Color(0xFF4CAF50)
+                    else -> Color(0xFFFF9800)
+                }
+
 
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Icon(if(order.status=="accepted") Icons.Default.CheckCircle else Icons.Default.Close, null, tint = statusColor, modifier = Modifier.size(16.dp))

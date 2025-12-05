@@ -15,6 +15,7 @@ import androidx.compose.material.icons.filled.MonetizationOn
 import androidx.compose.material.icons.filled.RadioButtonUnchecked
 import androidx.compose.material.icons.filled.ReceiptLong
 import androidx.compose.material.icons.filled.Send
+import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.snapshots.SnapshotStateList
@@ -30,6 +31,7 @@ import com.afsar.titipin.data.model.JastipOrder
 import java.text.NumberFormat
 import java.util.Locale
 
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ShoppingListScreen(
@@ -39,8 +41,18 @@ fun ShoppingListScreen(
     val session = viewModel.currentSession
     val isCreator = session?.creatorId == viewModel.currentUserId
 
-    val allShoppingItems = viewModel.orders.filter { it.status == "accepted" || it.status == "bought" }
+    val allShoppingItems = viewModel.orders.filter {
+        it.status == "accepted" || it.status == "bought" || it.status == "revision"
+    }
     val myOrders = viewModel.orders.filter { it.requesterId == viewModel.currentUserId }
+
+    if (viewModel.uiMessage != null) {
+        AlertDialog(
+            onDismissRequest = { viewModel.clearMessage() },
+            confirmButton = { TextButton(onClick = { viewModel.clearMessage() }) { Text("OK") } },
+            text = { Text(viewModel.uiMessage!!) }
+        )
+    }
 
     Scaffold(
         topBar = {
@@ -67,7 +79,6 @@ fun ShoppingListScreen(
                 .padding(16.dp)
         ) {
 
-            // --- HEADER INFO & TIMER ---
             SessionStatusHeader(
                 timeString = viewModel.timeString,
                 isRevision = viewModel.isRevisionPhase
@@ -76,34 +87,21 @@ fun ShoppingListScreen(
             Spacer(modifier = Modifier.height(16.dp))
 
             if (isCreator) {
-                // --- TAMPILAN KHUSUS JASTIPER ---
-
-                // 1. REKAPITULASI (Card Total)
-                RecapCard(
-                    totalItems = viewModel.totalItems,
-                    totalPrice = viewModel.totalPrice
-                )
-
+                // --- JASTIPER VIEW ---
+                RecapCard(viewModel.totalItems, viewModel.totalPrice)
                 Spacer(modifier = Modifier.height(12.dp))
 
-                // 2. DAFTAR BARANG (CHECKLIST)
                 Text("Daftar Barang (${allShoppingItems.size})", fontWeight = FontWeight.Bold, modifier = Modifier.padding(bottom = 8.dp))
 
-                LazyColumn(
-                    verticalArrangement = Arrangement.spacedBy(8.dp),
-                    modifier = Modifier.weight(1f)
-                ) {
-                    // List Barang
+                LazyColumn(verticalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.weight(1f)) {
                     items(allShoppingItems) { item ->
                         ShoppingItemCard(
                             item = item,
                             isCreator = true,
-                            isRevision = viewModel.isRevisionPhase,
-                            onToggleCheck = { viewModel.toggleItemBought(item) } // Update DB
+                            onToggleCheck = { viewModel.toggleItemBought(item) },
+                            onFlagRevision = { viewModel.flagItemForRevision(item) }
                         )
                     }
-
-                    // 3. REKAP PER USER (Bagian Bawah List)
                     item {
                         Spacer(modifier = Modifier.height(16.dp))
                         Text("Tagihan Per User", fontWeight = FontWeight.Bold, modifier = Modifier.padding(bottom = 8.dp))
@@ -113,23 +111,18 @@ fun ShoppingListScreen(
                 }
 
             } else {
-                // --- TAMPILAN KHUSUS PENITIP ---
-
+                // --- PENITIP VIEW ---
                 Text("Pesanan Saya", fontWeight = FontWeight.Bold, modifier = Modifier.padding(bottom = 8.dp))
-
                 if (myOrders.isEmpty()) {
                     Text("Kamu belum memesan apa-apa di sesi ini.", color = Color.Gray, fontSize = 12.sp)
                 } else {
-                    LazyColumn(
-                        verticalArrangement = Arrangement.spacedBy(8.dp),
-                        modifier = Modifier.weight(1f)
-                    ) {
+                    LazyColumn(verticalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.weight(1f)) {
                         items(myOrders) { item ->
                             ShoppingItemCard(
                                 item = item,
                                 isCreator = false,
-                                isRevision = viewModel.isRevisionPhase,
-                                onToggleCheck = {}
+                                onToggleCheck = {},
+                                onFlagRevision = {}
                             )
                         }
                     }
@@ -139,6 +132,98 @@ fun ShoppingListScreen(
     }
 }
 
+// ... (Komponen RecapCard, UserBillCard, SessionStatusHeader, ChatSection biarkan sama) ...
+
+@Composable
+fun ShoppingItemCard(
+    item: JastipOrder,
+    isCreator: Boolean,
+    onToggleCheck: () -> Unit,
+    onFlagRevision: () -> Unit
+) {
+    val isChecked = item.status == "bought"
+    val isRevision = item.status == "revision"
+
+    // Warna Background
+    val cardColor = when {
+        isChecked -> Color(0xFFF1F8E9) // Hijau muda (Dibeli)
+        isRevision -> Color(0xFFFFEBEE) // Merah muda (Revisi)
+        else -> Color.White
+    }
+
+    val strokeColor = if (isChecked) Color(0xFF4CAF50) else Color.Transparent
+
+    Card(
+        colors = CardDefaults.cardColors(containerColor = cardColor),
+        shape = RoundedCornerShape(12.dp),
+        border = BorderStroke(1.dp, strokeColor),
+        elevation = CardDefaults.cardElevation(1.dp),
+        modifier = Modifier.fillMaxWidth()
+    ) {
+        Row(
+            modifier = Modifier.padding(12.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            if (isCreator) {
+                // Checkbox Beli
+                IconButton(onClick = onToggleCheck) {
+                    Icon(
+                        if (isChecked) Icons.Default.CheckCircle else Icons.Default.RadioButtonUnchecked,
+                        contentDescription = null,
+                        tint = if (isChecked) Color(0xFF4CAF50) else Color.Gray
+                    )
+                }
+            } else {
+                Icon(
+                    Icons.Default.ReceiptLong,
+                    contentDescription = null,
+                    tint = if (isChecked) Color(0xFF4CAF50) else if (isRevision) Color.Red else Color.Gray,
+                    modifier = Modifier.padding(12.dp).size(24.dp)
+                )
+            }
+
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = item.itemName,
+                    fontWeight = FontWeight.Bold,
+                    textDecoration = if (isChecked) androidx.compose.ui.text.style.TextDecoration.LineThrough else null,
+                    color = if (isChecked) Color.Gray else Color.Black
+                )
+                Text(
+                    text = "${item.quantity}x | ${item.requesterName}",
+                    fontSize = 12.sp,
+                    color = Color.Gray
+                )
+
+                if (item.notes.isNotEmpty()) {
+                    Text("Catatan: ${item.notes}", fontSize = 12.sp, color = Color(0xFFEF6C00), fontStyle = androidx.compose.ui.text.font.FontStyle.Italic)
+                }
+
+                // Pesan status revisi
+                if (isRevision) {
+                    Text("⚠️ STOK HABIS / BUTUH REVISI", color = Color.Red, fontSize = 10.sp, fontWeight = FontWeight.Bold)
+                }
+            }
+
+            // Kolom Kanan: Harga atau Tombol Revisi
+            Column(horizontalAlignment = Alignment.End) {
+                Text(
+                    text = "${(item.priceEstimate / 1000).toInt()}k",
+                    fontWeight = FontWeight.Bold,
+                    color = Color.Gray,
+                    fontSize = 12.sp
+                )
+
+                // TOMBOL REVISI (Khusus Creator & Belum dibeli)
+                if (isCreator && !isChecked && !isRevision) {
+                    IconButton(onClick = onFlagRevision) {
+                        Icon(Icons.Default.Warning, contentDescription = "Tandai Revisi", tint = Color(0xFFFF9800))
+                    }
+                }
+            }
+        }
+    }
+}
 @Composable
 fun SessionStatusHeader(timeString: String, isRevision: Boolean) {
     Card(
@@ -210,78 +295,6 @@ fun UserBillCard(userBills: Map<String, Double>) {
     }
 }
 
-@Composable
-fun ShoppingItemCard(
-    item: JastipOrder,
-    isCreator: Boolean,
-    isRevision: Boolean,
-    onToggleCheck: () -> Unit
-) {
-    val isChecked = item.status == "bought"
-    val cardColor = if (isChecked) Color(0xFFF1F8E9) else Color.White // Hijau muda jika terbeli
-    val strokeColor = if (isChecked) Color(0xFF4CAF50) else Color.Transparent
-
-    Card(
-        colors = CardDefaults.cardColors(containerColor = cardColor),
-        shape = RoundedCornerShape(12.dp),
-        border = BorderStroke(1.dp, strokeColor),
-        elevation = CardDefaults.cardElevation(1.dp),
-        modifier = Modifier.fillMaxWidth()
-    ) {
-        Row(
-            modifier = Modifier.padding(12.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            if (isCreator) {
-                // Checkbox hanya untuk Jastiper
-                IconButton(onClick = onToggleCheck) {
-                    Icon(
-                        if (isChecked) Icons.Default.CheckCircle else Icons.Default.RadioButtonUnchecked,
-                        contentDescription = null,
-                        tint = if (isChecked) Color(0xFF4CAF50) else Color.Gray
-                    )
-                }
-            } else {
-                // Icon status untuk Penitip
-                Icon(
-                    Icons.Default.Home,
-                    contentDescription = null,
-                    tint = if (isChecked) Color(0xFF4CAF50) else Color.Gray,
-                    modifier = Modifier.padding(12.dp).size(24.dp)
-                )
-            }
-
-            Column(modifier = Modifier.weight(1f)) {
-                Text(
-                    text = item.itemName,
-                    fontWeight = FontWeight.Bold,
-                    textDecoration = if (isChecked) androidx.compose.ui.text.style.TextDecoration.LineThrough else null,
-                    color = if (isChecked) Color.Gray else Color.Black
-                )
-                Text(
-                    text = "${item.quantity}x | ${item.requesterName}",
-                    fontSize = 12.sp,
-                    color = Color.Gray
-                )
-
-                if (item.notes.isNotEmpty()) {
-                    Text("Catatan: ${item.notes}", fontSize = 12.sp, color = Color(0xFFEF6C00), fontStyle = androidx.compose.ui.text.font.FontStyle.Italic)
-                }
-
-                if (isRevision && !isChecked && isCreator) {
-                    Text("⚠️ Stok habis? Chat user!", color = Color.Red, fontSize = 10.sp, fontWeight = FontWeight.Bold)
-                }
-            }
-
-            Text(
-                text = "${(item.priceEstimate / 1000).toInt()}k",
-                fontWeight = FontWeight.Bold,
-                color = Color.Gray,
-                fontSize = 12.sp
-            )
-        }
-    }
-}
 //
 //@Composable
 //fun ShoppingItemCard(item: JastipOrder, isRevision: Boolean) {
@@ -334,11 +347,9 @@ fun ChatSection(
             Spacer(modifier = Modifier.height(8.dp))
 
             LazyColumn(
-                modifier = Modifier.height(120.dp), // Sedikit lebih tinggi
-                reverseLayout = true // Chat terbaru di bawah (jika list dibalik)
+                modifier = Modifier.height(120.dp),
+                reverseLayout = true
             ) {
-                // Tampilkan chat (perlu dibalik urutannya jika pakai reverseLayout=true di data)
-                // Disini kita render biasa saja
                 items(messages) { msg ->
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Text("${msg.senderName}: ", fontWeight = FontWeight.Bold, fontSize = 12.sp, color = Color(0xFF370061))
