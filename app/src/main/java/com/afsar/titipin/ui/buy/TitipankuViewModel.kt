@@ -173,5 +173,19 @@ class TitipankuViewModel @Inject constructor(
         viewModelScope.launch { repository.sendSessionChatMessage(sessionId, msg).collect{} }
     }
 
+    fun finishSession() {
+        val session = currentSession ?: return
+        viewModelScope.launch {
+            repository.updateSessionStatus(session.id, "closed").collect { result ->
+                result.onSuccess {
+                    isSessionExpired = true
+                    timeString = "Selesai"
+                    // Refresh session data
+                    loadSessionDetail(session.copy(status = "closed"))
+                }
+            }
+        }
+    }
+
     fun clearMessage() { uiMessage = null }
 }

@@ -136,7 +136,7 @@ fun SessionDetailScreen(
                     timeString = viewModel.timeString,
                     isRevision = viewModel.isRevisionPhase,
                     showFinishButton = isCreator, // <-- Param baru
-                    onFinishClick = { /* TODO: viewModel.finishSession() */ }
+                    onFinishClick = { viewModel.finishSession() }
                 )
             }
             item {
