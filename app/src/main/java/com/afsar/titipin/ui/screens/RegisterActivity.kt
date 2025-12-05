@@ -60,11 +60,12 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.afsar.titipin.R
-import com.afsar.titipin.ui.screens.ui.theme.Primary
-import com.afsar.titipin.ui.screens.ui.theme.TextDarkSecondary
-import com.afsar.titipin.ui.screens.ui.theme.TextLightPrimary
-import com.afsar.titipin.ui.screens.ui.theme.TitipInTheme
-import com.afsar.titipin.ui.screens.ui.theme.jakartaFamily
+import com.afsar.titipin.ui.home.MainActivity
+import com.afsar.titipin.ui.theme.Primary
+import com.afsar.titipin.ui.theme.TextDarkSecondary
+import com.afsar.titipin.ui.theme.TextLightPrimary
+import com.afsar.titipin.ui.theme.TitipInTheme
+import com.afsar.titipin.ui.theme.jakartaFamily
 import com.afsar.titipin.ui.viewmodel.RegisterViewModel
 import com.google.android.gms.auth.api.signin.GoogleSignIn
 
