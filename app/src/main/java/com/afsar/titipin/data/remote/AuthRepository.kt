@@ -16,31 +16,42 @@ interface AuthRepository {
     fun login(email: String, pass: String): Flow<Result<AuthResult>>
     fun register(name: String, username: String, email: String, pass: String): Flow<Result<AuthResult>>
     fun loginWithGoogle(idToken: String): Flow<Result<AuthResult>>
+    fun getCurrentUserUid(): String?
     fun logout()
-
     fun getUserProfile(): Flow<Result<User>>
     fun searchUsers(query: String): Flow<Result<List<User>>>
     
     // Bank Account
     fun updateBankAccount(bankName: String, bankAccountNumber: String, bankAccountName: String): Flow<Result<Boolean>>
 
-    fun sendCircleRequest(receiverId: String): Flow<Result<Boolean>>
-    fun getIncomingRequests(): Flow<Result<List<CircleRequest>>>
-    fun respondToRequest(requestId: String, isAccepted: Boolean): Flow<Result<Boolean>>
+    //    Circle
     fun createCircle(name: String, members: List<User>): Flow<Result<Boolean>>
     fun getMyCircles(): Flow<Result<List<Circle>>>
     fun getCircleDetail(circleId: String): Flow<Result<Circle>>
+
+    //  Todo Implementasi Dari Accept dan Reject Request
+    fun sendCircleRequest(receiverId: String): Flow<Result<Boolean>>
+    fun getIncomingRequests(): Flow<Result<List<CircleRequest>>>
+    fun respondToRequest(requestId: String, isAccepted: Boolean): Flow<Result<Boolean>>
+
+
+    //    Session
     fun createJastipSession(session: JastipSession): Flow<Result<Boolean>>
     fun getCircleSessions(circleId: String): Flow<Result<List<JastipSession>>>
-    fun getMyCircle(): Flow<Result<List<User>>>
     fun getMyJastipSessions(): Flow<Result<List<JastipSession>>>
     fun getSessionOrders(sessionId: String): Flow<Result<List<JastipOrder>>>
-    fun updateOrderStatus(orderId: String, newStatus: String): Flow<Result<Boolean>>
-    fun createJastipOrder(order: JastipOrder): Flow<Result<Boolean>>
-    fun getSessionChatMessages(sessionId: String): Flow<Result<List<ChatMessage>>>
     fun sendSessionChatMessage(sessionId: String, message: String): Flow<Result<Boolean>>
-    fun getCurrentUserUid(): String?
     fun updateSessionStatus(sessionId: String, newStatus: String): Flow<Result<Boolean>>
     fun toggleRevisionMode(sessionId: String, isRevision: Boolean): Flow<Result<Boolean>>
+
+    //    Order
+    fun createJastipOrder(order: JastipOrder): Flow<Result<Boolean>>
+    fun updateOrderStatus(orderId: String, newStatus: String): Flow<Result<Boolean>>
+    fun getSessionChatMessages(sessionId: String): Flow<Result<List<ChatMessage>>>
     fun listenToPaymentsBySessionAndUser(sessionId: String, userId: String): Flow<Result<List<PaymentInfo>>>
+
+//    Payment
+
+
+
 }

@@ -98,32 +98,18 @@ class CircleViewModel @Inject constructor(
     var incomingRequests by mutableStateOf<List<CircleRequest>>(emptyList())
 
 
-    init {
-        loadIncomingRequests()
-    }
+//    init {
+//        loadIncomingRequests()
+//    }
+//
+//
+//    fun loadIncomingRequests() {
+//        viewModelScope.launch {
+//            repository.getIncomingRequests().collect { result ->
+//                result.onSuccess { incomingRequests = it }
+//            }
+//        }
+//    }
 
 
-    fun sendRequest(user: User) {
-        viewModelScope.launch {
-            repository.sendCircleRequest(user.uid).collect {
-                // Handle sukses/gagal kirim notif/toast
-            }
-        }
-    }
-
-    fun loadIncomingRequests() {
-        viewModelScope.launch {
-            repository.getIncomingRequests().collect { result ->
-                result.onSuccess { incomingRequests = it }
-            }
-        }
-    }
-
-    fun respondRequest(request: CircleRequest, accept: Boolean) {
-        viewModelScope.launch {
-            repository.respondToRequest(request.id, accept).collect {
-                // Refresh list otomatis karena pakai SnapshotListener
-            }
-        }
-    }
 }

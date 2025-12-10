@@ -340,10 +340,10 @@ class AuthRepositoryImpl @Inject constructor(
         awaitClose { }
     }
 
-    override fun getMyCircle(): Flow<Result<List<User>>> = callbackFlow {
-        trySend(Result.success(emptyList()))
-        awaitClose { }
-    }
+//    override fun getMyCircle(): Flow<Result<List<User>>> = callbackFlow {
+//        trySend(Result.success(emptyList()))
+//        awaitClose { }
+//    }
 
     override fun getMyJastipSessions(): Flow<Result<List<JastipSession>>> = callbackFlow {
         val myUid = firebaseAuth.currentUser?.uid ?: return@callbackFlow
@@ -421,7 +421,7 @@ class AuthRepositoryImpl @Inject constructor(
         awaitClose { }
     }
 
-    override fun sendSessionChatMessage(sessionId: String, messageText: String): Flow<Result<Boolean>> = callbackFlow {
+    override fun sendSessionChatMessage(sessionId: String, message: String): Flow<Result<Boolean>> = callbackFlow {
         val myUid = firebaseAuth.currentUser?.uid ?: return@callbackFlow
 
         firestore.collection("users").document(myUid).get().addOnSuccessListener { doc ->
@@ -432,7 +432,7 @@ class AuthRepositoryImpl @Inject constructor(
                 id = newMsgRef.id,
                 senderId = myUid,
                 senderName = userName,
-                message = messageText,
+                message = message,
                 timestamp = com.google.firebase.Timestamp.now()
             )
 
@@ -494,14 +494,14 @@ class AuthRepositoryImpl @Inject constructor(
             .whereEqualTo("userId", userId)
             .addSnapshotListener { snapshot, error ->
                 if (error != null) {
-                    android.util.Log.e("AuthRepositoryImpl", "Payment listener error", error)
+                    Log.e("AuthRepositoryImpl", "Payment listener error", error)
                     trySend(Result.failure(error))
                     return@addSnapshotListener
                 }
                 val payments = snapshot?.toObjects(PaymentInfo::class.java) ?: emptyList()
-                android.util.Log.d("AuthRepositoryImpl", "Payment listener: sessionId=$sessionId, userId=$userId, found ${payments.size} payments")
+                Log.d("AuthRepositoryImpl", "Payment listener: sessionId=$sessionId, userId=$userId, found ${payments.size} payments")
                 payments.forEach { p ->
-                    android.util.Log.d("AuthRepositoryImpl", "Payment: orderId=${p.orderId}, status=${p.status}, amount=${p.amount}")
+                    Log.d("AuthRepositoryImpl", "Payment: orderId=${p.orderId}, status=${p.status}, amount=${p.amount}")
                 }
                 trySend(Result.success(payments))
             }
