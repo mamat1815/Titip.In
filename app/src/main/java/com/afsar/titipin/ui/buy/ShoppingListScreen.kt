@@ -22,12 +22,15 @@ import androidx.compose.runtime.snapshots.SnapshotStateList
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.afsar.titipin.data.model.ChatMessage
 import com.afsar.titipin.data.model.JastipOrder
+import com.afsar.titipin.ui.payment.PaymentActivity
+import com.afsar.titipin.ui.payment.PaymentStatusCard
 import java.text.NumberFormat
 import java.util.Locale
 
@@ -112,6 +115,29 @@ fun ShoppingListScreen(
 
             } else {
                 // --- PENITIP VIEW ---
+                val context = LocalContext.current
+                
+                // Payment Card (if session closed and has orders)
+                if (viewModel.isPaymentRequired) {
+                    PaymentStatusCard(
+                        amount = viewModel.myTotalBill,
+                        status = viewModel.myPaymentStatus, // Real-time status from Firestore
+                        onPayClick = {
+                            // Navigate to PaymentActivity with real user data
+                            val user = viewModel.currentUser
+                            val intent = android.content.Intent(context, PaymentActivity::class.java).apply {
+                                putExtra(PaymentActivity.EXTRA_SESSION_ID, session?.id ?: "")
+                                putExtra(PaymentActivity.EXTRA_USER_ID, viewModel.currentUserId)
+                                putExtra(PaymentActivity.EXTRA_AMOUNT, viewModel.myTotalBill)
+                                putExtra(PaymentActivity.EXTRA_USER_NAME, user?.name ?: "User")
+                                putExtra(PaymentActivity.EXTRA_USER_EMAIL, user?.email ?: "user@titipin.com")
+                            }
+                            context.startActivity(intent)
+                        },
+                        modifier = Modifier.padding(bottom = 12.dp)
+                    )
+                }
+                
                 Text("Pesanan Saya", fontWeight = FontWeight.Bold, modifier = Modifier.padding(bottom = 8.dp))
                 if (myOrders.isEmpty()) {
                     Text("Kamu belum memesan apa-apa di sesi ini.", color = Color.Gray, fontSize = 12.sp)

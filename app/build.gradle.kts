@@ -83,6 +83,17 @@ dependencies {
     implementation("com.google.maps.android:maps-compose:6.12.2")
     implementation("com.google.android.gms:play-services-maps:19.2.0")
 
+//    // Midtrans SDK
+    implementation("com.midtrans:uikit:2.0.0-SANDBOX")
+
+    // Networking - Retrofit & OkHttp for Firebase Functions
+    implementation("com.squareup.retrofit2:retrofit:2.9.0")
+    implementation("com.squareup.retrofit2:converter-gson:2.9.0")
+    implementation("com.squareup.okhttp3:okhttp:4.11.0")
+    implementation("com.squareup.okhttp3:logging-interceptor:4.11.0")
+    implementation("com.google.code.gson:gson:2.10.1")
+ // Use 2.0.0 for production
+
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)

@@ -21,5 +21,6 @@ data class JastipSession(
     val status: String = "open",
     val totalOrders: Int = 0,
     val participantIds: List<String> = emptyList(),
-    val createdAt: Timestamp = Timestamp.now()
+    val createdAt: Timestamp = Timestamp.now(),
+    val isRevisionMode: Boolean = false
 ) : Parcelable

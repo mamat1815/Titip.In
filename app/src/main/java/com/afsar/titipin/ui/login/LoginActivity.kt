@@ -79,8 +79,13 @@ class LoginActivity : ComponentActivity() {
         setContent {
             TitipInTheme {
                 Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
+                    val viewModel: LoginViewModel = hiltViewModel()
+                    LaunchedEffect(Unit) {
+                        viewModel.checkActiveSession()
+                    }
                     LoginScreen(
-                        modifier = Modifier.padding(innerPadding)
+                        modifier = Modifier.padding(innerPadding),
+                        viewModel = viewModel
                     )
                 }
             }

@@ -2,6 +2,9 @@ package com.afsar.titipin.di
 
 import com.afsar.titipin.data.remote.AuthRepository
 import com.afsar.titipin.data.remote.AuthRepositoryImpl
+import com.afsar.titipin.data.remote.PaymentRepository
+import com.afsar.titipin.data.remote.PaymentRepositoryImpl
+import com.afsar.titipin.data.remote.api.FirebaseFunctionsApi
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 import dagger.Module
@@ -33,5 +36,14 @@ object AppModule {
         firestore: FirebaseFirestore
     ): AuthRepository {
         return AuthRepositoryImpl(auth, firestore)
+    }
+
+    @Provides
+    @Singleton
+    fun providePaymentRepository(
+        api: FirebaseFunctionsApi,
+        firestore: FirebaseFirestore
+    ): PaymentRepository {
+        return PaymentRepositoryImpl(api, firestore)
     }
 }

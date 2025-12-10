@@ -11,6 +11,8 @@ import androidx.lifecycle.viewModelScope
 import com.afsar.titipin.data.model.ChatMessage
 import com.afsar.titipin.data.model.JastipOrder
 import com.afsar.titipin.data.model.JastipSession
+import com.afsar.titipin.data.model.PaymentInfo
+import com.afsar.titipin.data.model.User
 import com.afsar.titipin.data.remote.AuthRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Job
@@ -40,13 +42,42 @@ class TitipankuViewModel @Inject constructor(
 
     var uiMessage by mutableStateOf<String?>(null)
 
+    var currentUser by mutableStateOf<User?>(null)
+        private set
+
+    var myPaymentStatus by mutableStateOf<String>("pending")
+        private set
+
     init {
         currentUserId = repository.getCurrentUserUid() ?: ""
+        fetchUserProfile()
+    }
+
+    private fun fetchUserProfile() {
+        viewModelScope.launch {
+            repository.getUserProfile().collect { result ->
+                result.onSuccess { user ->
+                    currentUser = user
+                }
+            }
+        }
     }
 
     val totalItems by derivedStateOf { orders.filter { it.status == "accepted" || it.status == "bought" }.sumOf { it.quantity } }
     val totalPrice by derivedStateOf { orders.filter { it.status == "accepted" || it.status == "bought" }.sumOf { it.priceEstimate * it.quantity } }
     val userBills by derivedStateOf { orders.filter { it.status == "accepted" || it.status == "bought" }.groupBy { it.requesterName }.mapValues { it.value.sumOf { o -> o.priceEstimate * o.quantity } } }
+    
+    // Payment calculations
+    val myTotalBill by derivedStateOf {
+        orders.filter { 
+            it.requesterId == currentUserId && 
+            (it.status == "accepted" || it.status == "bought") 
+        }.sumOf { it.priceEstimate * it.quantity }
+    }
+    
+    val isPaymentRequired by derivedStateOf {
+        currentSession?.status == "closed" && myTotalBill > 0.0
+    }
 
 
     fun loadMySessions() {
@@ -56,10 +87,40 @@ class TitipankuViewModel @Inject constructor(
     fun loadSessionDetail(session: JastipSession) {
         currentSession = session
         isSessionExpired = session.status != "open"
+        isRevisionPhase = session.isRevisionMode
 
         startTimer(session)
         viewModelScope.launch { repository.getSessionOrders(session.id).collect { result -> result.onSuccess { orders.clear(); orders.addAll(it) } } }
         viewModelScope.launch { repository.getSessionChatMessages(session.id).collect { result -> result.onSuccess { chatMessages.clear(); chatMessages.addAll(it) } } }
+        
+        // Listen to session changes for real-time isRevisionMode updates
+        viewModelScope.launch {
+            repository.getCircleSessions(session.circleId).collect { result ->
+                result.onSuccess { sessions ->
+                    val updatedSession = sessions.find { it.id == session.id }
+                    if (updatedSession != null) {
+                        currentSession = updatedSession
+                        isRevisionPhase = updatedSession.isRevisionMode
+                    }
+                }
+            }
+        }
+        
+        // Listen to payment status changes for current user
+        viewModelScope.launch {
+            android.util.Log.d("TitipankuViewModel", "Starting payment listener for session=${session.id}, user=$currentUserId")
+            repository.listenToPaymentsBySessionAndUser(session.id, currentUserId).collect { result ->
+                result.onSuccess { payments ->
+                    android.util.Log.d("TitipankuViewModel", "Received ${payments.size} payments")
+                    // Get latest payment for this user
+                    val myPayment = payments.firstOrNull()
+                    myPaymentStatus = myPayment?.status ?: "pending"
+                    android.util.Log.d("TitipankuViewModel", "Updated myPaymentStatus to: $myPaymentStatus")
+                }.onFailure { error ->
+                    android.util.Log.e("TitipankuViewModel", "Payment listener error", error)
+                }
+            }
+        }
     }
 
     private fun startTimer(session: JastipSession) {
@@ -67,7 +128,6 @@ class TitipankuViewModel @Inject constructor(
 
         val durationMillis = session.durationMinutes * 60 * 1000L
         val endTime = session.createdAt.toDate().time + durationMillis
-        val revisionStart = endTime - (2 * 60 * 1000)
 
         timerJob = viewModelScope.launch {
             while (true) {
@@ -84,13 +144,10 @@ class TitipankuViewModel @Inject constructor(
                     val minutes = (timeLeft / 1000) / 60
                     val seconds = (timeLeft / 1000) % 60
                     timeString = String.format("%02d:%02d", minutes, seconds)
-                    isRevisionPhase = now >= revisionStart
                     isSessionExpired = false
                 } else {
                     timeString = "Waktu Habis"
-                    isRevisionPhase = false
                     isSessionExpired = true
-                    // Optional: Auto close session di DB
                     break
                 }
                 delay(1000)
@@ -182,6 +239,26 @@ class TitipankuViewModel @Inject constructor(
                     timeString = "Selesai"
                     // Refresh session data
                     loadSessionDetail(session.copy(status = "closed"))
+                }
+            }
+        }
+    }
+
+    fun toggleRevisionMode() {
+        val session = currentSession ?: return
+        val newRevisionMode = !session.isRevisionMode
+        
+        viewModelScope.launch {
+            repository.toggleRevisionMode(session.id, newRevisionMode).collect { result ->
+                result.onSuccess {
+                    isRevisionPhase = newRevisionMode
+                    // Send chat notification
+                    val msg = if (newRevisionMode) {
+                        "🔄 MODE REVISI DIAKTIFKAN! Jastiper sedang mengecek ketersediaan barang."
+                    } else {
+                        "✅ Mode revisi selesai. Belanja dilanjutkan."
+                    }
+                    sendChatSystem(session.id, msg)
                 }
             }
         }

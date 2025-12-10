@@ -7,6 +7,7 @@ import com.afsar.titipin.data.model.Circle
 import com.afsar.titipin.data.model.CircleRequest
 import com.afsar.titipin.data.model.JastipOrder
 import com.afsar.titipin.data.model.JastipSession
+import com.afsar.titipin.data.model.PaymentInfo
 import com.afsar.titipin.data.model.User
 import com.google.firebase.auth.AuthResult
 import com.google.firebase.auth.FirebaseAuth
@@ -451,4 +452,61 @@ class AuthRepositoryImpl @Inject constructor(
             .addOnFailureListener { trySend(Result.failure(it)) }
         awaitClose { }
     }
+
+
+    override fun toggleRevisionMode(sessionId: String, isRevision: Boolean): Flow<Result<Boolean>> = callbackFlow {
+        firestore.collection("sessions").document(sessionId)
+            .update("isRevisionMode", isRevision)
+            .addOnSuccessListener { trySend(Result.success(true)) }
+            .addOnFailureListener { trySend(Result.failure(it)) }
+        awaitClose { }
+    }
+    override fun updateBankAccount(
+        bankName: String,
+        bankAccountNumber: String,
+        bankAccountName: String
+    ): Flow<Result<Boolean>> = callbackFlow {
+        val myUid = firebaseAuth.currentUser?.uid
+        if (myUid == null) {
+            trySend(Result.failure(Exception("User belum login")))
+            awaitClose { }
+            return@callbackFlow
+        }
+        val updates = hashMapOf<String, Any>(
+            "bankName" to bankName,
+            "bankAccountNumber" to bankAccountNumber,
+            "bankAccountName" to bankAccountName
+        )
+        firestore.collection("users").document(myUid)
+            .update(updates)
+            .addOnSuccessListener { trySend(Result.success(true)) }
+            .addOnFailureListener { trySend(Result.failure(it)) }
+
+        awaitClose { }
+    }
+
+    override fun listenToPaymentsBySessionAndUser(
+        sessionId: String,
+        userId: String
+    ): Flow<Result<List<PaymentInfo>>> = callbackFlow {
+        val listener = firestore.collection("payments")
+            .whereEqualTo("sessionId", sessionId)
+            .whereEqualTo("userId", userId)
+            .addSnapshotListener { snapshot, error ->
+                if (error != null) {
+                    android.util.Log.e("AuthRepositoryImpl", "Payment listener error", error)
+                    trySend(Result.failure(error))
+                    return@addSnapshotListener
+                }
+                val payments = snapshot?.toObjects(PaymentInfo::class.java) ?: emptyList()
+                android.util.Log.d("AuthRepositoryImpl", "Payment listener: sessionId=$sessionId, userId=$userId, found ${payments.size} payments")
+                payments.forEach { p ->
+                    android.util.Log.d("AuthRepositoryImpl", "Payment: orderId=${p.orderId}, status=${p.status}, amount=${p.amount}")
+                }
+                trySend(Result.success(payments))
+            }
+        awaitClose { listener.remove() }
+    }
+
+
 }

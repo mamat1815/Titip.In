@@ -71,4 +71,10 @@ class LoginViewModel @Inject constructor(
             errorMessage = "Google Sign-In Error: ${e.message}"
         }
     }
+    fun checkActiveSession() {
+        val currentUser = repository.getCurrentUserUid()
+        if (currentUser != null) {
+            isLoginSuccess = true
+        }
+    }
 }

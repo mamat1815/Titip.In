@@ -68,6 +68,10 @@
             android:label="@string/title_activity_splash_screen"
             android:theme="@style/Theme.TitipIn" />
         <activity
+            android:name=".ui.payment.PaymentActivity"
+            android:exported="false"
+            android:theme="@style/Theme.TitipIn" />
+        <activity
             android:name=".ui.home.MainActivity"
             android:exported="true"
             android:label="@string/app_name"

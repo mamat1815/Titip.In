@@ -1,6 +1,5 @@
 package com.afsar.titipin.ui.home
 
-import HomeScreen
 import android.content.Intent
 import android.os.Bundle
 import androidx.activity.ComponentActivity
@@ -27,6 +26,7 @@ import com.afsar.titipin.ui.circle.CircleActivity
 
 import com.afsar.titipin.ui.components.MainBottomNav
 import com.afsar.titipin.ui.components.RouteScreen
+import com.afsar.titipin.ui.home.screens.HomeScreen
 import com.afsar.titipin.ui.home.screens.ProfileScreen
 import com.afsar.titipin.ui.theme.TitipInTheme
 import dagger.hilt.android.AndroidEntryPoint
