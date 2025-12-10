@@ -61,6 +61,13 @@ android {
 
 }
 
+configurations.all {
+    resolutionStrategy {
+        // Force Gson 2.8.9 - required for Midtrans SDK SANDBOX (has DateTypeAdapter)
+        force("com.google.code.gson:gson:2.8.9")
+    }
+}
+
 dependencies {
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.lifecycle.runtime.ktx)
@@ -98,15 +105,19 @@ dependencies {
     implementation(libs.maps.compose)
     implementation(libs.play.services.maps)
 
-//    // Midtrans SDK
-    implementation(libs.uikit)
+    // Gson - must be before Midtrans SDK
+    implementation(libs.gson)
+
+    // Midtrans SDK
+    implementation(libs.uikit) {
+        exclude(group = "com.google.code.gson", module = "gson")
+    }
 
     // Networking - Retrofit & OkHttp for Firebase Functions
     implementation(libs.retrofit)
     implementation(libs.converter.gson)
     implementation(libs.okhttp)
     implementation(libs.logging.interceptor)
-    implementation(libs.gson)
  // Use 2.0.0 for production
 
     testImplementation(libs.junit)

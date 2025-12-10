@@ -14,15 +14,18 @@ import com.afsar.titipin.data.model.JastipSession
 import com.afsar.titipin.data.model.PaymentInfo
 import com.afsar.titipin.data.model.User
 import com.afsar.titipin.data.remote.AuthRepository
+import com.afsar.titipin.data.remote.PaymentRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import javax.inject.Inject
+import kotlin.math.ceil
 
 @HiltViewModel
 class TitipankuViewModel @Inject constructor(
-    private val repository: AuthRepository
+    private val repository: AuthRepository,
+    private val paymentRepository: PaymentRepository
 ) : ViewModel() {
 
     var mySessions by mutableStateOf<List<JastipSession>>(emptyList())
@@ -47,6 +50,24 @@ class TitipankuViewModel @Inject constructor(
 
     var myPaymentStatus by mutableStateOf<String>("pending")
         private set
+    
+    // Disbursement state
+    var disbursementStatus by mutableStateOf<String?>(null) // null, "loading", "success", "failed"
+        private set
+    var disbursementMessage by mutableStateOf<String?>(null)
+        private set
+    var disbursementAmount by mutableStateOf<Double>(0.0)
+        private set
+    
+    // Track all session payments for validation
+    private var sessionPayments = mutableStateListOf<PaymentInfo>()
+    
+    // Fee calculation constants
+    companion object {
+        private const val PAYMENT_FEE_PERCENTAGE = 0.029  // 2.9%
+        private const val PAYMENT_FEE_FIXED = 2000.0
+        private const val DISBURSEMENT_FEE = 5000.0
+    }
 
     init {
         currentUserId = repository.getCurrentUserUid() ?: ""
@@ -77,6 +98,63 @@ class TitipankuViewModel @Inject constructor(
     
     val isPaymentRequired by derivedStateOf {
         currentSession?.status == "closed" && myTotalBill > 0.0
+    }
+    
+    // Check if Jastiper can disburse funds
+    val canDisburse by derivedStateOf {
+        val session = currentSession ?: return@derivedStateOf false
+        val isCreator = session.creatorId == currentUserId
+        val isClosed = session.status == "closed"
+        
+        if (!isCreator || !isClosed) return@derivedStateOf false
+        
+        // Validate all users have paid
+        val expectedUserIds = userBills.keys.mapNotNull { userName ->
+            // Find userId from orders by requesterName
+            orders.find { it.requesterName == userName }?.requesterId
+        }.distinct()
+        
+        val paidUserIds = sessionPayments
+            .filter { it.status == "success" }
+            .map { it.userId }
+            .distinct()
+        
+        // All expected users must have paid
+        expectedUserIds.all { it in paidUserIds }
+    }
+    
+    // Calculate payment fee for a single transaction
+    private fun calculatePaymentFee(amount: Double): Double {
+        val percentageFee = amount * PAYMENT_FEE_PERCENTAGE
+        return ceil(percentageFee + PAYMENT_FEE_FIXED)
+    }
+    
+    // Payment fee for current user's bill (before payment)
+    val myPaymentFee by derivedStateOf {
+        calculatePaymentFee(myTotalBill)
+    }
+    
+    // Total amount current user needs to pay (including fee)
+    val myTotalWithFee by derivedStateOf {
+        myTotalBill + myPaymentFee
+    }
+    
+    // Current user's name for display
+    val currentUserName: String
+        get() = currentUser?.name ?: "Unknown"
+    
+    // Total payment fees for all successful payments (for disbursement calculation)
+    val totalPaymentFees by derivedStateOf {
+        sessionPayments
+            .filter { it.status == "success" }
+            .sumOf { calculatePaymentFee(it.amount) }
+    }
+    
+    // Net amount after deducting all fees
+    val netDisbursementAmount by derivedStateOf {
+        val gross = totalPrice
+        val fees = totalPaymentFees + DISBURSEMENT_FEE
+        maxOf(0.0, gross - fees)  // Ensure non-negative
     }
 
 
@@ -118,6 +196,17 @@ class TitipankuViewModel @Inject constructor(
                     android.util.Log.d("TitipankuViewModel", "Updated myPaymentStatus to: $myPaymentStatus")
                 }.onFailure { error ->
                     android.util.Log.e("TitipankuViewModel", "Payment listener error", error)
+                }
+            }
+        }
+        
+        // Listen to ALL payments for this session (for disbursement validation)
+        viewModelScope.launch {
+            paymentRepository.getSessionPayments(session.id).collect { result ->
+                result.onSuccess { payments ->
+                    sessionPayments.clear()
+                    sessionPayments.addAll(payments)
+                    android.util.Log.d("TitipankuViewModel", "Session has ${payments.size} total payments")
                 }
             }
         }
@@ -265,4 +354,75 @@ class TitipankuViewModel @Inject constructor(
     }
 
     fun clearMessage() { uiMessage = null }
+    
+    // ===== DISBURSEMENT FUNCTIONS =====
+    
+    fun requestDisbursement() {
+        val session = currentSession ?: return
+        
+        // Validation
+        if (session.creatorId != currentUserId) {
+            disbursementMessage = "Hanya Jastiper yang bisa cairkan dana"
+            return
+        }
+        
+        if (session.status != "closed") {
+            disbursementMessage = "Session harus ditutup dulu sebelum cairkan dana"
+            return
+        }
+        
+        if (!canDisburse) {
+            disbursementMessage = "Tunggu semua user bayar dulu sebelum cairkan dana"
+            return
+        }
+        
+        // Calculate total amount
+        val totalAmount = sessionPayments
+            .filter { it.status == "success" }
+            .sumOf { it.amount }
+        
+        if (totalAmount <= 0.0) {
+            disbursementMessage = "Tidak ada pembayaran yang berhasil"
+            return
+        }
+        
+        // Request disbursement
+        disbursementStatus = "loading"
+        disbursementMessage = null
+        
+        viewModelScope.launch {
+            paymentRepository.disburseFunds(
+                sessionId = session.id,
+                jastiperId = currentUserId
+            ).collect { result ->
+                result.onSuccess { response ->
+                    disbursementStatus = "success"
+                    disbursementAmount = response.netAmount
+                    disbursementMessage = "Dana berhasil dicairkan: Rp ${response.netAmount.toInt()}"
+                    android.util.Log.d("TitipankuViewModel", "Disbursement success: ${response.netAmount}")
+                }.onFailure { error ->
+                    disbursementStatus = "failed"
+                    disbursementMessage = when {
+                        error.message?.contains("bank account", ignoreCase = true) == true ->
+                            "Gagal: Daftar rekening bank dulu di Profile"
+                        error.message?.contains("payments", ignoreCase = true) == true ->
+                            "Gagal: Belum ada pembayaran yang berhasil"
+                        else ->
+                            "Gagal cairkan dana: ${error.message}"
+                    }
+                    android.util.Log.e("TitipankuViewModel", "Disbursement failed", error)
+                }
+            }
+        }
+    }
+    
+    fun clearDisbursementMessage() {
+        disbursementMessage = null
+    }
+    
+    fun retryDisbursement() {
+        disbursementStatus = null
+        disbursementMessage = null
+        requestDisbursement()
+    }
 }
