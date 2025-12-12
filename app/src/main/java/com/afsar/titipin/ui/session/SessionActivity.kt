@@ -21,28 +21,10 @@ class SessionActivity : ComponentActivity() {
         enableEdgeToEdge()
         setContent {
             TitipInTheme {
-
-                   CreateSessionScreen(
-                       onBackClick = { finish() },
-                   )
-
+               CreateSessionScreen(
+                   onBackClick = { finish() },
+               )
             }
         }
-    }
-}
-
-@Composable
-fun Greeting(name: String, modifier: Modifier = Modifier) {
-    Text(
-        text = "Hello $name!",
-        modifier = modifier
-    )
-}
-
-@Preview(showBackground = true)
-@Composable
-fun GreetingPreview() {
-    TitipInTheme {
-        Greeting("Android")
     }
 }

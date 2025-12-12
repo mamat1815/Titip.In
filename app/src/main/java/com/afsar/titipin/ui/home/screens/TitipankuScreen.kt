@@ -1,4 +1,4 @@
-package com.afsar.titipin.ui.buy
+package com.afsar.titipin.ui.home.screens
 
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -16,6 +16,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.afsar.titipin.data.model.JastipSession
+import com.afsar.titipin.ui.home.viewmodel.TitipankuViewModel
 
 @Composable
 fun TitipankuScreen(

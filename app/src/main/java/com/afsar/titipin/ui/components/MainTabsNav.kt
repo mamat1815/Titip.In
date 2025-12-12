@@ -33,40 +33,8 @@ fun MainBottomNav(navController: NavController) {
     val items = listOf(
         NavItem("Beranda", Icons.Outlined.Home, RouteScreen.Home),
         NavItem("Titipanku", Icons.Outlined.ChecklistRtl, RouteScreen.Titip),
-        NavItem("Teman", Icons.Outlined.Notifications, RouteScreen.Home),
-
+        NavItem("Circle", Icons.Outlined.Notifications, RouteScreen.Circles),
         NavItem("Profile", Icons.Outlined.Person, RouteScreen.Profile),
-
-    )
-
-    NavigationBar {
-        val navBackStackEntry by navController.currentBackStackEntryAsState()
-        val currentRoute = navBackStackEntry?.destination?.route
-
-        items.forEach { item ->
-            NavigationBarItem(
-                icon = { Icon(item.icon, contentDescription = item.label) },
-                label = { Text(item.label) },
-                selected = currentRoute == item.screen.route,
-                onClick = {
-                    navController.navigate(item.screen.route) {
-                        popUpTo(navController.graph.startDestinationId) {
-                            saveState = true
-                        }
-                        launchSingleTop = true
-                        restoreState = true
-                    }
-                }
-            )
-        }
-    }
-}
-
-@Composable
-fun MainTabNav(navController: NavController) {
-    val items = listOf(
-        NavItem("ActiveSessions", Icons.Default.Checklist, RouteScreen.ActiveSessions),
-        NavItem("History", Icons.Default.History, RouteScreen.Home),
     )
 
     NavigationBar {

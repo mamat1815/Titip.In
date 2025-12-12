@@ -1,8 +1,9 @@
-package com.afsar.titipin.ui.buy
+package com.afsar.titipin.ui.home.viewmodel
 
-import androidx.compose.runtime.mutableIntStateOf
+import android.util.Log
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
@@ -50,7 +51,7 @@ class TitipankuViewModel @Inject constructor(
 
     var myPaymentStatus by mutableStateOf<String>("pending")
         private set
-    
+
     // Disbursement state
     var disbursementStatus by mutableStateOf<String?>(null) // null, "loading", "success", "failed"
         private set
@@ -58,15 +59,15 @@ class TitipankuViewModel @Inject constructor(
         private set
     var disbursementAmount by mutableStateOf<Double>(0.0)
         private set
-    
+
     // Track all session payments for validation
     private var sessionPayments = mutableStateListOf<PaymentInfo>()
-    
+
     // Fee calculation constants
     companion object {
-        private const val PAYMENT_FEE_PERCENTAGE = 0.029  // 2.9%
+        private const val PAYMENT_FEE_PERCENTAGE= 0.029  // 2.9%
         private const val PAYMENT_FEE_FIXED = 2000.0
-        private const val DISBURSEMENT_FEE = 5000.0
+        private const val DISBURSEMENT_FEE = 2000.0
     }
 
     init {
@@ -84,72 +85,81 @@ class TitipankuViewModel @Inject constructor(
         }
     }
 
-    val totalItems by derivedStateOf { orders.filter { it.status == "accepted" || it.status == "bought" }.sumOf { it.quantity } }
-    val totalPrice by derivedStateOf { orders.filter { it.status == "accepted" || it.status == "bought" }.sumOf { it.priceEstimate * it.quantity } }
-    val userBills by derivedStateOf { orders.filter { it.status == "accepted" || it.status == "bought" }.groupBy { it.requesterName }.mapValues { it.value.sumOf { o -> o.priceEstimate * o.quantity } } }
-    
+    val totalItems by derivedStateOf {
+        orders.filter { it.status == "accepted" || it.status == "bought" }.sumOf { it.quantity }
+    }
+    val totalPrice by derivedStateOf {
+        orders.filter { it.status == "accepted" || it.status == "bought" }
+            .sumOf { it.priceEstimate * it.quantity }
+    }
+    val userBills by derivedStateOf {
+        orders.filter { it.status == "accepted" || it.status == "bought" }
+            .groupBy { it.requesterName }
+            .mapValues { it.value.sumOf { o -> o.priceEstimate * o.quantity } }
+    }
+
     // Payment calculations
     val myTotalBill by derivedStateOf {
-        orders.filter { 
-            it.requesterId == currentUserId && 
-            (it.status == "accepted" || it.status == "bought") 
+        orders.filter {
+            it.requesterId == currentUserId &&
+                    (it.status == "accepted" || it.status == "bought")
         }.sumOf { it.priceEstimate * it.quantity }
     }
-    
+
     val isPaymentRequired by derivedStateOf {
         currentSession?.status == "closed" && myTotalBill > 0.0
     }
-    
+
     // Check if Jastiper can disburse funds
     val canDisburse by derivedStateOf {
         val session = currentSession ?: return@derivedStateOf false
         val isCreator = session.creatorId == currentUserId
         val isClosed = session.status == "closed"
-        
+
         if (!isCreator || !isClosed) return@derivedStateOf false
-        
+
         // Validate all users have paid
         val expectedUserIds = userBills.keys.mapNotNull { userName ->
             // Find userId from orders by requesterName
             orders.find { it.requesterName == userName }?.requesterId
         }.distinct()
-        
+
         val paidUserIds = sessionPayments
             .filter { it.status == "success" }
             .map { it.userId }
             .distinct()
-        
+
         // All expected users must have paid
         expectedUserIds.all { it in paidUserIds }
     }
-    
+
     // Calculate payment fee for a single transaction
     private fun calculatePaymentFee(amount: Double): Double {
         val percentageFee = amount * PAYMENT_FEE_PERCENTAGE
         return ceil(percentageFee + PAYMENT_FEE_FIXED)
     }
-    
+
     // Payment fee for current user's bill (before payment)
     val myPaymentFee by derivedStateOf {
         calculatePaymentFee(myTotalBill)
     }
-    
+
     // Total amount current user needs to pay (including fee)
     val myTotalWithFee by derivedStateOf {
         myTotalBill + myPaymentFee
     }
-    
+
     // Current user's name for display
     val currentUserName: String
         get() = currentUser?.name ?: "Unknown"
-    
+
     // Total payment fees for all successful payments (for disbursement calculation)
     val totalPaymentFees by derivedStateOf {
         sessionPayments
             .filter { it.status == "success" }
             .sumOf { calculatePaymentFee(it.amount) }
     }
-    
+
     // Net amount after deducting all fees
     val netDisbursementAmount by derivedStateOf {
         val gross = totalPrice
@@ -170,7 +180,7 @@ class TitipankuViewModel @Inject constructor(
         startTimer(session)
         viewModelScope.launch { repository.getSessionOrders(session.id).collect { result -> result.onSuccess { orders.clear(); orders.addAll(it) } } }
         viewModelScope.launch { repository.getSessionChatMessages(session.id).collect { result -> result.onSuccess { chatMessages.clear(); chatMessages.addAll(it) } } }
-        
+
         // Listen to session changes for real-time isRevisionMode updates
         viewModelScope.launch {
             repository.getCircleSessions(session.circleId).collect { result ->
@@ -183,30 +193,30 @@ class TitipankuViewModel @Inject constructor(
                 }
             }
         }
-        
+
         // Listen to payment status changes for current user
         viewModelScope.launch {
-            android.util.Log.d("TitipankuViewModel", "Starting payment listener for session=${session.id}, user=$currentUserId")
+            Log.d("TitipankuViewModel", "Starting payment listener for session=${session.id}, user=$currentUserId")
             repository.listenToPaymentsBySessionAndUser(session.id, currentUserId).collect { result ->
                 result.onSuccess { payments ->
-                    android.util.Log.d("TitipankuViewModel", "Received ${payments.size} payments")
+                    Log.d("TitipankuViewModel", "Received ${payments.size} payments")
                     // Get latest payment for this user
                     val myPayment = payments.firstOrNull()
                     myPaymentStatus = myPayment?.status ?: "pending"
-                    android.util.Log.d("TitipankuViewModel", "Updated myPaymentStatus to: $myPaymentStatus")
+                    Log.d("TitipankuViewModel", "Updated myPaymentStatus to: $myPaymentStatus")
                 }.onFailure { error ->
-                    android.util.Log.e("TitipankuViewModel", "Payment listener error", error)
+                    Log.e("TitipankuViewModel", "Payment listener error", error)
                 }
             }
         }
-        
+
         // Listen to ALL payments for this session (for disbursement validation)
         viewModelScope.launch {
             paymentRepository.getSessionPayments(session.id).collect { result ->
                 result.onSuccess { payments ->
                     sessionPayments.clear()
                     sessionPayments.addAll(payments)
-                    android.util.Log.d("TitipankuViewModel", "Session has ${payments.size} total payments")
+                    Log.d("TitipankuViewModel", "Session has ${payments.size} total payments")
                 }
             }
         }
@@ -336,7 +346,7 @@ class TitipankuViewModel @Inject constructor(
     fun toggleRevisionMode() {
         val session = currentSession ?: return
         val newRevisionMode = !session.isRevisionMode
-        
+
         viewModelScope.launch {
             repository.toggleRevisionMode(session.id, newRevisionMode).collect { result ->
                 result.onSuccess {
@@ -354,42 +364,42 @@ class TitipankuViewModel @Inject constructor(
     }
 
     fun clearMessage() { uiMessage = null }
-    
+
     // ===== DISBURSEMENT FUNCTIONS =====
-    
+
     fun requestDisbursement() {
         val session = currentSession ?: return
-        
+
         // Validation
         if (session.creatorId != currentUserId) {
             disbursementMessage = "Hanya Jastiper yang bisa cairkan dana"
             return
         }
-        
+
         if (session.status != "closed") {
             disbursementMessage = "Session harus ditutup dulu sebelum cairkan dana"
             return
         }
-        
+
         if (!canDisburse) {
             disbursementMessage = "Tunggu semua user bayar dulu sebelum cairkan dana"
             return
         }
-        
+
         // Calculate total amount
         val totalAmount = sessionPayments
             .filter { it.status == "success" }
             .sumOf { it.amount }
-        
+
         if (totalAmount <= 0.0) {
             disbursementMessage = "Tidak ada pembayaran yang berhasil"
             return
         }
-        
+
         // Request disbursement
         disbursementStatus = "loading"
         disbursementMessage = null
-        
+
         viewModelScope.launch {
             paymentRepository.disburseFunds(
                 sessionId = session.id,
@@ -399,7 +409,7 @@ class TitipankuViewModel @Inject constructor(
                     disbursementStatus = "success"
                     disbursementAmount = response.netAmount
                     disbursementMessage = "Dana berhasil dicairkan: Rp ${response.netAmount.toInt()}"
-                    android.util.Log.d("TitipankuViewModel", "Disbursement success: ${response.netAmount}")
+                    Log.d("TitipankuViewModel", "Disbursement success: ${response.netAmount}")
                 }.onFailure { error ->
                     disbursementStatus = "failed"
                     disbursementMessage = when {
@@ -410,19 +420,20 @@ class TitipankuViewModel @Inject constructor(
                         else ->
                             "Gagal cairkan dana: ${error.message}"
                     }
-                    android.util.Log.e("TitipankuViewModel", "Disbursement failed", error)
+                    Log.e("TitipankuViewModel", "Disbursement failed", error)
                 }
             }
         }
     }
-    
+
     fun clearDisbursementMessage() {
         disbursementMessage = null
     }
-    
+
     fun retryDisbursement() {
         disbursementStatus = null
         disbursementMessage = null
         requestDisbursement()
     }
+
 }

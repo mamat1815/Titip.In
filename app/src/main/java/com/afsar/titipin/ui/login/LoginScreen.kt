@@ -1,12 +1,9 @@
-package com.afsar.titipin.ui.screens
+package com.afsar.titipin.ui.login
 
 import android.app.Activity
 import android.content.Intent
-import android.os.Bundle
-import androidx.activity.ComponentActivity
+import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
-import androidx.activity.compose.setContent
-import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
@@ -29,12 +26,10 @@ import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.material.icons.filled.VisibilityOff
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -55,51 +50,29 @@ import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.withStyle
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import com.afsar.titipin.R
 import com.afsar.titipin.ui.home.MainActivity
+import com.afsar.titipin.ui.register.OrSeparator
+import com.afsar.titipin.ui.register.RegisterActivity
 import com.afsar.titipin.ui.theme.Primary
 import com.afsar.titipin.ui.theme.TextDarkSecondary
 import com.afsar.titipin.ui.theme.TextLightPrimary
-import com.afsar.titipin.ui.theme.TitipInTheme
 import com.afsar.titipin.ui.theme.jakartaFamily
-import com.afsar.titipin.ui.viewmodel.RegisterViewModel
 import com.google.android.gms.auth.api.signin.GoogleSignIn
-
 import com.google.android.gms.auth.api.signin.GoogleSignInOptions
-import dagger.hilt.android.AndroidEntryPoint
-
-@AndroidEntryPoint
-class RegisterActivity : ComponentActivity() {
-    override fun onCreate(savedInstanceState: Bundle?) {
-        super.onCreate(savedInstanceState)
-        enableEdgeToEdge()
-        setContent {
-            TitipInTheme {
-                Scaffold(
-                    modifier = Modifier.fillMaxSize()
-                ) { innerPadding ->
-                    RegisterScreen(
-
-                        modifier = Modifier.padding(innerPadding)
-                    )
-                }
-            }
-        }
-    }
-}
 
 @Composable
-fun RegisterScreen(modifier: Modifier = Modifier, viewModel: RegisterViewModel = hiltViewModel()) {
+fun LoginScreen(modifier: Modifier = Modifier, viewModel: LoginViewModel = hiltViewModel()) {
     val context = LocalContext.current
-    LaunchedEffect(viewModel.isRegisterSuccess) {
-        if (viewModel.isRegisterSuccess) {
+    LaunchedEffect(viewModel.isLoginSuccess) {
+        if (viewModel.isLoginSuccess) {
             val intent = Intent(context, MainActivity::class.java)
             intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
             context.startActivity(intent)
+
             (context as? Activity)?.finish()
         }
     }
@@ -112,9 +85,12 @@ fun RegisterScreen(modifier: Modifier = Modifier, viewModel: RegisterViewModel =
     }
 
     fun launchGoogleSignIn() {
+//        TODO PINDAH KE LOCAL PROPS
         val webClientId = "212927678912-b9njd6313nb1h8vmqm6tg9tuq8u5hcc0.apps.googleusercontent.com"
         val gso = GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN)
-            .requestIdToken(webClientId).requestEmail().build()
+            .requestIdToken(webClientId)
+            .requestEmail()
+            .build()
         val googleSignInClient = GoogleSignIn.getClient(context, gso)
         googleSignInLauncher.launch(googleSignInClient.signInIntent)
     }
@@ -124,21 +100,24 @@ fun RegisterScreen(modifier: Modifier = Modifier, viewModel: RegisterViewModel =
             .fillMaxSize()
             .padding(16.dp)
     ){
+
+        Spacer(
+            modifier = Modifier.height(32.dp)
+        )
+
         Text(
-            text = "Buat Akun Baru",
+            text = "Selamat Datang Kembali",
             fontFamily = jakartaFamily,
             fontWeight = FontWeight.Bold,
             fontSize = 24.sp,
-            color = Primary
+            color = TextLightPrimary
         )
-        Spacer(
-                modifier = Modifier.height(8.dp)
-                )
+
         Text(
-            text = "Daftarkan dirimu untuk mulai menitip barang dengan mudah",
+            text = "Masuk untuk melanjutkan ke akun anda",
             fontFamily = jakartaFamily,
-            fontWeight = FontWeight.Medium,
-            fontSize = 16.sp,
+            fontWeight = FontWeight.Thin,
+            fontSize = 12.sp,
             color = TextLightPrimary
         )
 
@@ -146,45 +125,6 @@ fun RegisterScreen(modifier: Modifier = Modifier, viewModel: RegisterViewModel =
             modifier = Modifier.height(16.dp)
         )
 
-        Text(
-            text = "Nama Lengkap",
-            fontFamily = jakartaFamily,
-            fontWeight = FontWeight.SemiBold,
-            fontSize = 16.sp,
-            color = TextLightPrimary
-        )
-        OutlinedTextField(
-            value = viewModel.nameInput,
-            modifier = Modifier.fillMaxWidth(),
-            onValueChange = {
-                viewModel.nameInput = it
-            },
-            label = { Text("Masukkan Nama Lengkap") },
-        )
-
-        Spacer(
-            modifier = Modifier.height(8.dp)
-        )
-
-        Text(
-            text = "Username",
-            fontFamily = jakartaFamily,
-            fontWeight = FontWeight.SemiBold,
-            fontSize = 16.sp,
-            color = TextLightPrimary
-        )
-        OutlinedTextField(
-            value = viewModel.usernameInput,
-            modifier = Modifier.fillMaxWidth(),
-            onValueChange = {
-                viewModel.usernameInput = it
-            },
-            label = { Text("Masukkan Username") }
-        )
-
-        Spacer(
-            modifier = Modifier.height(8.dp)
-        )
 
         Text(
             text = "Email",
@@ -196,9 +136,7 @@ fun RegisterScreen(modifier: Modifier = Modifier, viewModel: RegisterViewModel =
         OutlinedTextField(
             value = viewModel.emailInput,
             modifier = Modifier.fillMaxWidth(),
-            onValueChange = {
-                viewModel.emailInput = it
-            },
+            onValueChange = {viewModel.emailInput = it},
             label = { Text("Masukkan Alamat Email") }
         )
 
@@ -241,15 +179,32 @@ fun RegisterScreen(modifier: Modifier = Modifier, viewModel: RegisterViewModel =
                 }
             }
         )
+
+
+        Text(
+            text = "Lupa Password?",
+            color = Primary,
+            fontSize = 14.sp,
+            fontWeight = FontWeight.Bold,
+            modifier = Modifier
+                .align(Alignment.End)
+                .padding(top = 8.dp, end = 4.dp)
+                .clickable {
+                    Toast.makeText(context, "Login Clicked", Toast.LENGTH_SHORT).show()
+                }
+        )
         Spacer(
             modifier = Modifier.height(8.dp)
         )
         Button(
             modifier = Modifier.fillMaxWidth(),
-            onClick = { viewModel.onRegisterClicked() },
+            enabled = !viewModel.isLoading,
+            onClick = {
+                viewModel.onLoginClicked()
+            },
         ) {
 
-            if (viewModel.isLoading) {
+            if (viewModel.isLoading){
                 Text(
                     text = "Loading...",
                     fontSize = 18.sp,
@@ -259,7 +214,7 @@ fun RegisterScreen(modifier: Modifier = Modifier, viewModel: RegisterViewModel =
                 )
             } else {
                 Text(
-                    text = "Daftar",
+                    text = "Masuk",
                     fontSize = 18.sp,
                     fontFamily = jakartaFamily,
                     fontWeight = FontWeight.Bold,
@@ -293,14 +248,11 @@ fun RegisterScreen(modifier: Modifier = Modifier, viewModel: RegisterViewModel =
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.Center
             ) {
-
                 Image(
                     painter = painterResource(id = R.drawable.ic_google),
                     contentDescription = "Google Logo",
                     modifier = Modifier.size(24.dp)
                 )
-
-
 
                 Spacer(modifier = Modifier.width(12.dp))
 
@@ -318,14 +270,14 @@ fun RegisterScreen(modifier: Modifier = Modifier, viewModel: RegisterViewModel =
         )
 
         val annotatedText = buildAnnotatedString {
-            append("Sudah punya akun? ")
+            append("Belum punya akun? ")
             withStyle(
                 style = SpanStyle(
                     color = Primary,
                     fontWeight = FontWeight.Bold
                 )
             ) {
-                append("Masuk di sini")
+                append("Register di sini")
             }
         }
 
@@ -337,56 +289,13 @@ fun RegisterScreen(modifier: Modifier = Modifier, viewModel: RegisterViewModel =
                 interactionSource = remember { MutableInteractionSource() },
                 indication = null,
                 onClick = {
-                    val intent = Intent(context, LoginActivity::class.java)
+                    val intent = Intent(context, RegisterActivity::class.java)
                     context.startActivity(intent)
-                    (context as? Activity)?.finish()
                 }
 
             )
                 .fillMaxWidth()
         )
 
-    }
-}
-
-@Composable
-fun OrSeparator() {
-    Row(
-        modifier = Modifier.fillMaxWidth(),
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        HorizontalDivider(
-            modifier = Modifier.weight(1f),
-            thickness = 1.dp,
-            color = TextDarkSecondary
-        )
-
-        Text(
-            text = "ATAU",
-            color = TextDarkSecondary,
-            fontFamily = jakartaFamily,
-            fontWeight = FontWeight.Medium,
-            fontSize = 14.sp,
-            modifier = Modifier.padding(horizontal = 16.dp)
-        )
-
-        HorizontalDivider(
-            modifier = Modifier.weight(1f),
-            thickness = 1.dp,
-            color = TextDarkSecondary
-        )
-
-
-
-    }
-}
-
-
-
-@Preview(showBackground = true)
-@Composable
-fun GreetingPreview3() {
-    TitipInTheme {
-        RegisterScreen()
     }
 }

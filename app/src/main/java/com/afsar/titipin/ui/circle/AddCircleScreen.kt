@@ -31,6 +31,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
 import com.afsar.titipin.data.model.User
+import com.afsar.titipin.ui.home.viewmodel.CircleViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -53,7 +54,6 @@ fun AddCircleScreen(
                     }
                 },
                 actions = {
-                    // Tombol CREATE di pojok kanan atas (muncul jika nama diisi)
                     if (viewModel.newCircleName.isNotEmpty()) {
                         TextButton(onClick = {
                             viewModel.createCircle(onSuccess = onBackClick)
@@ -75,7 +75,6 @@ fun AddCircleScreen(
                 .padding(padding)
                 .fillMaxSize()
         ) {
-            // 1. INPUT NAMA CIRCLE
             OutlinedTextField(
                 value = viewModel.newCircleName,
                 onValueChange = { viewModel.newCircleName = it },
@@ -88,7 +87,6 @@ fun AddCircleScreen(
 
             Divider(thickness = 8.dp, color = Color(0xFFF5F5F5))
 
-            // 2. SELECTED MEMBERS (CHIPS)
             if (viewModel.selectedMembers.isNotEmpty()) {
                 LazyRow(
                     modifier = Modifier.fillMaxWidth().padding(16.dp),
@@ -103,7 +101,6 @@ fun AddCircleScreen(
                 }
             }
 
-            // 3. SEARCH BAR
             OutlinedTextField(
                 value = viewModel.searchQuery,
                 onValueChange = { viewModel.onSearchQueryChange(it) },
@@ -121,10 +118,8 @@ fun AddCircleScreen(
                 )
             )
 
-            // 4. LIST SEARCH RESULTS
             LazyColumn(modifier = Modifier.weight(1f)) {
                 items(viewModel.searchResults) { user ->
-                    // Cek apakah user sudah dipilih?
                     val isSelected = viewModel.selectedMembers.contains(user)
 
                     UserSelectionItem(
@@ -169,7 +164,6 @@ fun UserSelectionItem(user: User, isSelected: Boolean, onClick: () -> Unit) {
             Text(text = "@${user.username}", fontSize = 14.sp, color = Color.Gray)
         }
 
-        // Checkbox atau Icon Add
         if (isSelected) {
             Icon(Icons.Default.Check, contentDescription = "Selected", tint = Color(0xFF008069))
         }
@@ -188,7 +182,6 @@ fun SelectedMemberChip(user: User, onRemove: () -> Unit) {
                 contentScale = ContentScale.Crop,
                 modifier = Modifier.size(48.dp).clip(CircleShape).background(Color.LightGray)
             )
-            // Tombol X kecil
             Icon(
                 imageVector = Icons.Default.Close,
                 contentDescription = "Remove",

@@ -25,13 +25,11 @@ import com.afsar.titipin.ui.theme.TextLightPrimary
 import com.afsar.titipin.ui.theme.jakartaFamily
 import com.afsar.titipin.ui.home.viewmodel.ProfileViewModel
 
-
 @Composable
 fun ProfileScreen(viewModel: ProfileViewModel = hiltViewModel()) {
     val context = LocalContext.current
     var showBankAccountDialog by remember { mutableStateOf(false) }
 
-    // Show success/error message
     LaunchedEffect(viewModel.bankAccountSaveSuccess) {
         if (viewModel.bankAccountSaveSuccess == true) {
             showBankAccountDialog = false
@@ -127,7 +125,6 @@ fun ProfileScreen(viewModel: ProfileViewModel = hiltViewModel()) {
 
         Spacer(modifier = Modifier.height(8.dp))
 
-        // Menu Items
         ProfileMenuItem(
             icon = Icons.Default.Group,
             text = "Circle Saya",

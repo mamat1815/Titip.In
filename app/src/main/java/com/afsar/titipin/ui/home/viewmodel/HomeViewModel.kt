@@ -75,8 +75,4 @@ class HomeViewModel @Inject constructor(
         }
     }
 
-    fun logout() {
-        repository.logout()
-        currentUser = null
-    }
 }

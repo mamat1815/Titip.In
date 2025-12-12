@@ -25,7 +25,6 @@ class ProfileViewModel @Inject constructor(
     var errorMessage by mutableStateOf<String?>(null)
         private set
 
-    // Bank Account Form States
     var bankName by mutableStateOf("")
     var bankAccountNumber by mutableStateOf("")
     var bankAccountName by mutableStateOf("")
@@ -45,7 +44,6 @@ class ProfileViewModel @Inject constructor(
                 isLoading = false
                 result.onSuccess { user ->
                     currentUser = user
-                    // Populate bank account fields if already registered
                     bankName = user.bankName
                     bankAccountNumber = user.bankAccountNumber
                     bankAccountName = user.bankAccountName
@@ -90,9 +88,8 @@ class ProfileViewModel @Inject constructor(
         errorMessage = null
     }
 
-    // Fungsi Logout
     fun logout() {
         repository.logout()
-        currentUser = null // Bersihkan data di memori
+        currentUser = null
     }
 }

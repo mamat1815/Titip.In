@@ -1,4 +1,4 @@
-package com.afsar.titipin.ui.circle
+package com.afsar.titipin.ui.home.viewmodel
 
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -14,6 +14,7 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import javax.inject.Inject
+import kotlin.collections.plus
 
 @HiltViewModel
 class CircleViewModel @Inject constructor(
