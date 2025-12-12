@@ -23,6 +23,7 @@ fun LocationPickerDialog(
     onLocationSelected: (LatLng) -> Unit
 ) {
     // Lokasi Default (Misal: Monas Jakarta)
+//    TODO LIVE LOCATION
     val defaultLocation = LatLng(-6.175392, 106.827153)
     val cameraPositionState = rememberCameraPositionState {
         position = CameraPosition.fromLatLngZoom(defaultLocation, 15f)
