@@ -1,8 +1,8 @@
 package com.afsar.titipin.ui.home.screens
 
-import android.content.Intent
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AccountBalance
@@ -14,22 +14,26 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.afsar.titipin.ui.components.CirclesImage
 import com.afsar.titipin.ui.components.ProfileMenuItem
-import com.afsar.titipin.ui.circle.CircleActivity
 import com.afsar.titipin.ui.theme.TextDarkSecondary
 import com.afsar.titipin.ui.theme.TextLightPrimary
-import com.afsar.titipin.ui.theme.jakartaFamily
 import com.afsar.titipin.ui.home.viewmodel.ProfileViewModel
 
 @Composable
-fun ProfileScreen(viewModel: ProfileViewModel = hiltViewModel()) {
+fun ProfileScreen(
+    viewModel: ProfileViewModel = hiltViewModel(),
+    onLogoutClick: () -> Unit,
+    onCircleClick: () -> Unit // Callback navigasi
+) {
     val context = LocalContext.current
     var showBankAccountDialog by remember { mutableStateOf(false) }
 
+    // Tutup dialog otomatis jika sukses simpan
     LaunchedEffect(viewModel.bankAccountSaveSuccess) {
         if (viewModel.bankAccountSaveSuccess == true) {
             showBankAccountDialog = false
@@ -44,7 +48,7 @@ fun ProfileScreen(viewModel: ProfileViewModel = hiltViewModel()) {
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         Spacer(modifier = Modifier.height(16.dp))
-        
+
         CirclesImage(
             imageUrl = viewModel.currentUser?.photoUrl,
             size = 120.dp,
@@ -54,24 +58,22 @@ fun ProfileScreen(viewModel: ProfileViewModel = hiltViewModel()) {
 
         Text(
             text = viewModel.currentUser?.name ?: "Loading...",
-            fontFamily = jakartaFamily,
             fontWeight = FontWeight.Bold,
             fontSize = 24.sp,
             color = TextLightPrimary
         )
-        
+
         val username = "@" + (viewModel.currentUser?.username ?: "")
         Text(
             text = username,
-            fontFamily = jakartaFamily,
             fontWeight = FontWeight.Thin,
             fontSize = 18.sp,
             color = TextDarkSecondary
         )
 
-        Spacer(modifier = Modifier.height(16.dp))
+        Spacer(modifier = Modifier.height(24.dp))
 
-        // Bank Account Card
+        // --- KARTU REKENING BANK ---
         Card(
             modifier = Modifier
                 .fillMaxWidth()
@@ -84,40 +86,42 @@ fun ProfileScreen(viewModel: ProfileViewModel = hiltViewModel()) {
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Column {
+                    Column(modifier = Modifier.weight(1f)) {
                         Text(
-                            text = "Rekening Bank",
+                            text = "Rekening Penerimaan (Jastip)",
                             fontWeight = FontWeight.Bold,
                             fontSize = 16.sp
                         )
-                        if (viewModel.currentUser?.bankAccountNumber?.isNotEmpty() == true) {
-                            Spacer(modifier = Modifier.height(4.dp))
+                        Spacer(modifier = Modifier.height(8.dp))
+
+                        val bank = viewModel.currentUser?.bank
+                        if (bank != null && bank.bankAccountNumber.isNotEmpty()) {
                             Text(
-                                text = viewModel.currentUser?.bankName ?: "",
+                                text = "${bank.bankName} (${bank.bankCode})", // Tampilkan kode juga
                                 fontSize = 14.sp,
-                                color = Color.Gray
+                                fontWeight = FontWeight.SemiBold,
+                                color = Color(0xFF370061)
                             )
                             Text(
-                                text = viewModel.currentUser?.bankAccountNumber ?: "",
-                                fontSize = 14.sp,
-                                fontWeight = FontWeight.Medium
+                                text = bank.bankAccountNumber,
+                                fontSize = 16.sp,
+                                fontWeight = FontWeight.Bold
                             )
                             Text(
-                                text = viewModel.currentUser?.bankAccountName ?: "",
+                                text = "a.n. ${bank.bankAccountName}",
                                 fontSize = 12.sp,
                                 color = Color.Gray
                             )
                         } else {
-                            Spacer(modifier = Modifier.height(4.dp))
                             Text(
-                                text = "Belum terdaftar",
-                                fontSize = 14.sp,
+                                text = "Belum ada rekening terdaftar. Anda tidak bisa mencairkan dana jastip.",
+                                fontSize = 12.sp,
                                 color = Color.Gray
                             )
                         }
                     }
                     TextButton(onClick = { showBankAccountDialog = true }) {
-                        Text(if (viewModel.currentUser?.bankAccountNumber?.isNotEmpty() == true) "Ubah" else "Daftar")
+                        Text(if (viewModel.currentUser?.bank?.bankAccountNumber?.isNotEmpty() == true) "Ubah" else "Daftar")
                     }
                 }
             }
@@ -128,31 +132,22 @@ fun ProfileScreen(viewModel: ProfileViewModel = hiltViewModel()) {
         ProfileMenuItem(
             icon = Icons.Default.Group,
             text = "Circle Saya",
-            onClick = {
-                val intent = Intent(context, CircleActivity::class.java)
-                context.startActivity(intent)
-            }
+            onClick = onCircleClick
         )
 
-        Spacer(modifier = Modifier.height(16.dp))
+        Spacer(modifier = Modifier.height(32.dp))
 
-        // Logout Button
         Button(
-            onClick = {
-                viewModel.logout()
-                val intent = Intent(context, com.afsar.titipin.ui.login.LoginActivity::class.java)
-                intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
-                context.startActivity(intent)
-                (context as? android.app.Activity)?.finish()
-            },
+            onClick = onLogoutClick,
             modifier = Modifier.fillMaxWidth(),
-            colors = ButtonDefaults.buttonColors(containerColor = Color.Red)
+            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFD32F2F))
         ) {
             Text("Logout", color = Color.White)
         }
+
+        Spacer(modifier = Modifier.height(50.dp))
     }
 
-    // Bank Account Dialog
     if (showBankAccountDialog) {
         BankAccountDialog(
             viewModel = viewModel,
@@ -173,56 +168,59 @@ fun BankAccountDialog(
     AlertDialog(
         onDismissRequest = onDismiss,
         icon = { Icon(Icons.Default.AccountBalance, contentDescription = null) },
-        title = { Text("Daftar Rekening Bank") },
+        title = { Text("Rekening Pencairan Dana") },
         text = {
             Column(modifier = Modifier.fillMaxWidth()) {
+
+                // Input Kode Bank (Penting untuk Midtrans)
                 OutlinedTextField(
-                    value = viewModel.bankName,
-                    onValueChange = { viewModel.bankName = it },
-                    label = { Text("Nama Bank") },
-                    placeholder = { Text("Contoh: BCA, Mandiri, BNI") },
+                    value = viewModel.bankCode,
+                    onValueChange = { viewModel.bankCode = it },
+                    label = { Text("Kode Bank (ex: bca, bri)") },
+                    placeholder = { Text("bca") },
                     modifier = Modifier.fillMaxWidth(),
                     singleLine = true
                 )
-                
+
                 Spacer(modifier = Modifier.height(8.dp))
-                
+
+                OutlinedTextField(
+                    value = viewModel.bankName,
+                    onValueChange = { viewModel.bankName = it },
+                    label = { Text("Nama Bank Lengkap") },
+                    placeholder = { Text("Bank Central Asia") },
+                    modifier = Modifier.fillMaxWidth(),
+                    singleLine = true
+                )
+
+                Spacer(modifier = Modifier.height(8.dp))
+
                 OutlinedTextField(
                     value = viewModel.bankAccountNumber,
                     onValueChange = { viewModel.bankAccountNumber = it },
                     label = { Text("Nomor Rekening") },
                     placeholder = { Text("1234567890") },
                     modifier = Modifier.fillMaxWidth(),
-                    singleLine = true
+                    singleLine = true,
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
                 )
-                
+
                 Spacer(modifier = Modifier.height(8.dp))
-                
+
                 OutlinedTextField(
                     value = viewModel.bankAccountName,
                     onValueChange = { viewModel.bankAccountName = it },
                     label = { Text("Nama Pemilik Rekening") },
-                    placeholder = { Text("Sesuai buku rekening") },
+                    placeholder = { Text("Sesuai buku tabungan") },
                     modifier = Modifier.fillMaxWidth(),
                     singleLine = true
                 )
 
-                // Error message
                 if (viewModel.errorMessage != null) {
                     Spacer(modifier = Modifier.height(8.dp))
                     Text(
                         text = viewModel.errorMessage ?: "",
                         color = Color.Red,
-                        fontSize = 12.sp
-                    )
-                }
-
-                // Success message
-                if (viewModel.bankAccountSaveSuccess == true) {
-                    Spacer(modifier = Modifier.height(8.dp))
-                    Text(
-                        text = "✅ Rekening berhasil disimpan!",
-                        color = Color.Green,
                         fontSize = 12.sp
                     )
                 }

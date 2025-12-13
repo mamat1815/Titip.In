@@ -5,6 +5,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.afsar.titipin.data.model.Bank
 import com.afsar.titipin.data.model.User
 import com.afsar.titipin.data.remote.AuthRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -25,9 +26,12 @@ class ProfileViewModel @Inject constructor(
     var errorMessage by mutableStateOf<String?>(null)
         private set
 
-    var bankName by mutableStateOf("")
+    // State untuk Form Bank
+    var bankCode by mutableStateOf("") // ex: "bca", "mandiri"
+    var bankName by mutableStateOf("") // ex: "Bank Central Asia"
     var bankAccountNumber by mutableStateOf("")
     var bankAccountName by mutableStateOf("")
+
     var isSavingBankAccount by mutableStateOf(false)
     var bankAccountSaveSuccess by mutableStateOf<Boolean?>(null)
 
@@ -44,9 +48,12 @@ class ProfileViewModel @Inject constructor(
                 isLoading = false
                 result.onSuccess { user ->
                     currentUser = user
-                    bankName = user.bankName
-                    bankAccountNumber = user.bankAccountNumber
-                    bankAccountName = user.bankAccountName
+
+                    // --- PERBAIKAN: Safe Call (?.) agar tidak crash jika bank null ---
+                    bankCode = user.bank?.bankCode ?: ""
+                    bankName = user.bank?.bankName ?: ""
+                    bankAccountNumber = user.bank?.bankAccountNumber ?: ""
+                    bankAccountName = user.bank?.bankAccountName ?: ""
                 }
                 result.onFailure { error ->
                     errorMessage = error.localizedMessage ?: "Gagal memuat profil"
@@ -56,24 +63,31 @@ class ProfileViewModel @Inject constructor(
     }
 
     fun updateBankAccount() {
-        if (bankName.isBlank() || bankAccountNumber.isBlank() || bankAccountName.isBlank()) {
-            errorMessage = "Semua field bank harus diisi"
+        // Validasi input
+        if (bankCode.isBlank() || bankName.isBlank() || bankAccountNumber.isBlank() || bankAccountName.isBlank()) {
+            errorMessage = "Semua data bank wajib diisi"
             return
         }
 
         viewModelScope.launch {
             isSavingBankAccount = true
             bankAccountSaveSuccess = null
+            errorMessage = null // Reset error
 
-            repository.updateBankAccount(
+            // Buat object Bank
+            val bankData = Bank(
+                bankCode = bankCode,
                 bankName = bankName,
                 bankAccountNumber = bankAccountNumber,
                 bankAccountName = bankAccountName
-            ).collect { result ->
+            )
+
+            // Pastikan AuthRepository punya fungsi updateBankAccount yang menerima object Bank
+            repository.updateBankAccount(bankData).collect { result ->
                 isSavingBankAccount = false
                 result.onSuccess {
                     bankAccountSaveSuccess = true
-                    fetchUserProfile() // Refresh user data
+                    fetchUserProfile() // Refresh data user di UI
                 }
                 result.onFailure { error ->
                     bankAccountSaveSuccess = false
@@ -86,6 +100,13 @@ class ProfileViewModel @Inject constructor(
     fun clearBankAccountMessage() {
         bankAccountSaveSuccess = null
         errorMessage = null
+        // Opsional: Reset form ke data user asli jika batal edit
+        currentUser?.bank?.let {
+            bankCode = it.bankCode
+            bankName = it.bankName
+            bankAccountNumber = it.bankAccountNumber
+            bankAccountName = it.bankAccountName
+        }
     }
 
     fun logout() {

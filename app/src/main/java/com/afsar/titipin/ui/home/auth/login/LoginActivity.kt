@@ -1,4 +1,4 @@
-package com.afsar.titipin.ui.login
+package com.afsar.titipin.ui.home.auth.login
 
 import android.os.Bundle
 import androidx.activity.ComponentActivity
@@ -25,10 +25,10 @@ class LoginActivity : ComponentActivity() {
                     LaunchedEffect(Unit) {
                         viewModel.checkActiveSession()
                     }
-                    LoginScreen(
-                        modifier = Modifier.padding(innerPadding),
-                        viewModel = viewModel
-                    )
+//                    LoginScreen(
+//                        modifier = Modifier.padding(innerPadding),
+//                        viewModel = viewModel
+//                    )
                 }
             }
         }

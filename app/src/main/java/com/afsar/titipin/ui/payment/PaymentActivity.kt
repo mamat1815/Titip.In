@@ -27,6 +27,7 @@ class PaymentActivity : ComponentActivity() {
         const val EXTRA_AMOUNT = "amount"
         const val EXTRA_USER_NAME = "user_name"
         const val EXTRA_USER_EMAIL = "user_email"
+        const val EXTRA_USER_PHONE = "user_phone"
         
         const val RESULT_PAYMENT_SUCCESS = 1001
         const val RESULT_PAYMENT_FAILED = 1002
@@ -65,6 +66,8 @@ class PaymentActivity : ComponentActivity() {
         val amount = intent.getDoubleExtra(EXTRA_AMOUNT, 0.0)
         val userName = intent.getStringExtra(EXTRA_USER_NAME) ?: ""
         val userEmail = intent.getStringExtra(EXTRA_USER_EMAIL) ?: ""
+        val userPhone = intent.getStringExtra(EXTRA_USER_PHONE) ?: ""
+
 
         UiKitApi.Builder()
             .withContext(this)
@@ -114,6 +117,7 @@ class PaymentActivity : ComponentActivity() {
             is PaymentResult.Failed -> RESULT_PAYMENT_FAILED
             is PaymentResult.Pending -> RESULT_PAYMENT_PENDING
             is PaymentResult.Canceled -> RESULT_CANCELED
+            PaymentResult.Idle -> return
         }
         
         setResult(resultCode)
@@ -136,13 +140,15 @@ fun PaymentScreen(
     val isLoading = viewModel.isLoadingToken
     val errorMessage = viewModel.errorMessage
 
+
     LaunchedEffect(Unit) {
         viewModel.initiatePayment(
             sessionId = sessionId,
             userId = userId,
             amount = amount,
             userName = userName,
-            userEmail = userEmail
+            userEmail = userEmail,
+            userPhone = "082198547240" // TAMBAHAN: Wajib ada sesuai Repo
         )
     }
 
