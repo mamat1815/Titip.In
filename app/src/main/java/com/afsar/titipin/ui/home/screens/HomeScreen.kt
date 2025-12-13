@@ -1,11 +1,9 @@
 package com.afsar.titipin.ui.home.screens
 
-import android.content.Intent
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -15,47 +13,44 @@ import androidx.compose.material.icons.filled.Group
 import androidx.compose.material.icons.outlined.Timer
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.afsar.titipin.data.model.Circle
-import com.afsar.titipin.data.model.JastipSession
-import com.afsar.titipin.ui.circle.CircleActivity
-import com.afsar.titipin.ui.circle.CircleDetailActivity
+import com.afsar.titipin.data.model.Session
 import com.afsar.titipin.ui.components.CirclesImage
 import com.afsar.titipin.ui.theme.BackgroundLight
 import com.afsar.titipin.ui.theme.Primary
 import com.afsar.titipin.ui.theme.jakartaFamily
 import com.afsar.titipin.ui.home.viewmodel.HomeViewModel
-import com.afsar.titipin.ui.session.SessionActivity
 
 @Composable
-fun HomeScreen(viewModel: HomeViewModel = hiltViewModel()) {
-    val context = LocalContext.current
-    
+fun HomeScreen(
+    onSessionClick: (String) -> Unit,
+    onCreateSessionClick: () -> Unit,
+    onCircleClick: (String) -> Unit,
+    viewModel: HomeViewModel = hiltViewModel()
+) {
+    // Ambil data langsung dari state ViewModel yang sudah diproses
+    val currentUser = viewModel.currentUser
+    val activeSession = viewModel.activeSession
+    val myCircles = viewModel.myCircles
+    val sessionHistory = viewModel.sessionHistory
+    val isLoading = viewModel.isLoading
+
     Scaffold(
         floatingActionButton = {
             FloatingActionButton(
-                onClick = {
-                    val intent = Intent(context, SessionActivity::class.java)
-                    context.startActivity(intent)
-                },
+                onClick = onCreateSessionClick,
                 containerColor = Primary
             ) {
-                Icon(
-                    Icons.Default.Add,
-                    contentDescription = "Buat Circle Baru",
-                    modifier = Modifier.size(24.dp),
-                    tint = Color.White
-                )
+                Icon(Icons.Default.Add, null, tint = Color.White)
             }
         }
     ) { innerPadding ->
@@ -66,6 +61,7 @@ fun HomeScreen(viewModel: HomeViewModel = hiltViewModel()) {
                 .padding(innerPadding)
                 .padding(horizontal = 16.dp),
         ) {
+            // 1. Header Profil
             item {
                 Row(
                     modifier = Modifier
@@ -74,16 +70,16 @@ fun HomeScreen(viewModel: HomeViewModel = hiltViewModel()) {
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     CirclesImage(
-                        imageUrl = viewModel.currentUser?.photoUrl,
+                        imageUrl = currentUser?.photoUrl,
                         size = 40.dp,
                         modifier = Modifier.padding(end = 8.dp)
                     )
 
                     Spacer(Modifier.width(8.dp))
-                    
-                    val hello = viewModel.currentUser?.name ?: "User"
+
+                    val name = currentUser?.name?.split(" ")?.firstOrNull() ?: "User"
                     Text(
-                        text = "Halo, $hello",
+                        text = "Halo, $name \uD83D\uDC4B",
                         fontFamily = jakartaFamily,
                         fontSize = 18.sp,
                         fontWeight = FontWeight.Bold,
@@ -102,21 +98,27 @@ fun HomeScreen(viewModel: HomeViewModel = hiltViewModel()) {
                 )
             }
 
-            // Active Session Card
+            // 2. Active Session Card
             item {
-                val latestSession = viewModel.mySessions
-                    .filter { it.status == "open" }
-                    .maxByOrNull { it.createdAt.toDate().time }
-                
-                if (latestSession != null) {
-                    ActiveSessionCard(session = latestSession)
-                } else {
+                // UI tidak perlu mikir filter lagi, tinggal cek null
+                if (activeSession != null) {
+                    ActiveSessionCard(
+                        session = activeSession,
+                        onClick = { onSessionClick(activeSession.id) }
+                    )
+                } else if (!isLoading) {
+                    // Hanya tampilkan kosong jika loading selesai
                     EmptyActiveSessionCard()
+                } else {
+                    // Tampilkan Skeleton/Loading jika perlu, atau kosong sementara
+                    Box(Modifier.height(100.dp).fillMaxWidth(), contentAlignment = Alignment.Center) {
+                        CircularProgressIndicator(modifier = Modifier.size(24.dp))
+                    }
                 }
                 Spacer(modifier = Modifier.height(20.dp))
             }
 
-            // My Circles Section
+            // 3. My Circles Section
             item {
                 Row(
                     modifier = Modifier.fillMaxWidth(),
@@ -130,7 +132,7 @@ fun HomeScreen(viewModel: HomeViewModel = hiltViewModel()) {
                         fontFamily = jakartaFamily
                     )
                     Text(
-                        "${viewModel.myCircles.size} Circle",
+                        "${myCircles.size} Circle",
                         color = Primary,
                         fontSize = 12.sp,
                         fontWeight = FontWeight.Bold,
@@ -140,23 +142,22 @@ fun HomeScreen(viewModel: HomeViewModel = hiltViewModel()) {
                 Spacer(modifier = Modifier.height(12.dp))
             }
 
-            if (viewModel.myCircles.isEmpty()) {
+            if (myCircles.isEmpty() && !isLoading) {
                 item {
                     EmptyCirclesCard()
                     Spacer(modifier = Modifier.height(24.dp))
                 }
             } else {
-                items(viewModel.myCircles) { circle ->
-                    CircleCard(circle = circle, onClick = {
-                        val intent = Intent(context, CircleDetailActivity::class.java)
-                        intent.putExtra("circle", circle)
-                        context.startActivity(intent)
-                    })
+                items(myCircles) { circle ->
+                    CircleCard(
+                        circle = circle,
+                        onClick = { onCircleClick(circle.id) }
+                    )
                     Spacer(modifier = Modifier.height(12.dp))
                 }
             }
 
-            // History Section
+            // 4. History Section
             item {
                 Spacer(modifier = Modifier.height(12.dp))
                 Row(
@@ -174,24 +175,23 @@ fun HomeScreen(viewModel: HomeViewModel = hiltViewModel()) {
                 Spacer(modifier = Modifier.height(12.dp))
             }
 
-            val closedSessions = viewModel.mySessions
-                .filter { it.status == "closed" }
-                .sortedByDescending { it.createdAt.toDate().time }
-                .take(5)
-
-            if (closedSessions.isEmpty()) {
+            // UI langsung pakai data history dari VM
+            if (sessionHistory.isNotEmpty()) {
+                items(sessionHistory) { session ->
+                    HistorySessionCard(
+                        session = session,
+                        onClick = { onSessionClick(session.id) }
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
+                }
+            } else if (!isLoading) {
                 item {
                     Text(
-                        "Belum ada sesi yang selesai",
-                        fontSize = 14.sp,
+                        "Belum ada riwayat sesi.",
                         color = Color.Gray,
-                        fontFamily = jakartaFamily
+                        fontSize = 12.sp,
+                        modifier = Modifier.padding(vertical = 8.dp)
                     )
-                }
-            } else {
-                items(closedSessions) { session ->
-                    HistorySessionCard(session = session)
-                    Spacer(modifier = Modifier.height(8.dp))
                 }
             }
 
@@ -202,13 +202,19 @@ fun HomeScreen(viewModel: HomeViewModel = hiltViewModel()) {
     }
 }
 
+// ... (Komponen Card lainnya ActiveSessionCard, CircleCard, HistorySessionCard tetap sama) ...
+
+// ... (Sisa Composable Card di bawah ini biarkan sama seperti sebelumnya)
+
 @Composable
-fun ActiveSessionCard(session: JastipSession) {
+fun ActiveSessionCard(session: Session, onClick: () -> Unit) {
     Card(
         colors = CardDefaults.cardColors(containerColor = Color.White),
         shape = RoundedCornerShape(16.dp),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
-        modifier = Modifier.fillMaxWidth()
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable { onClick() }
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
             Row(
@@ -238,14 +244,14 @@ fun ActiveSessionCard(session: JastipSession) {
             }
 
             Spacer(modifier = Modifier.height(12.dp))
-            
+
             Text(
                 text = session.title,
                 fontSize = 18.sp,
                 fontWeight = FontWeight.Bold,
                 fontFamily = jakartaFamily
             )
-            
+
             Text(
                 text = session.locationName.ifEmpty { "Lokasi belum diset" },
                 fontSize = 12.sp,
@@ -330,7 +336,7 @@ fun CircleCard(circle: Circle, onClick: () -> Unit) {
                     fontFamily = jakartaFamily
                 )
                 Text(
-                    "${circle.members.size} anggota",
+                    "${circle.memberIds.size} anggota",
                     fontSize = 12.sp,
                     color = Color.Gray,
                     fontFamily = jakartaFamily
@@ -377,12 +383,14 @@ fun EmptyCirclesCard() {
 }
 
 @Composable
-fun HistorySessionCard(session: JastipSession) {
+fun HistorySessionCard(session: Session, onClick: () -> Unit) {
     Card(
         colors = CardDefaults.cardColors(containerColor = Color.White),
         shape = RoundedCornerShape(12.dp),
         elevation = CardDefaults.cardElevation(defaultElevation = 1.dp),
-        modifier = Modifier.fillMaxWidth()
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable { onClick() }
     ) {
         Row(
             modifier = Modifier.padding(16.dp),

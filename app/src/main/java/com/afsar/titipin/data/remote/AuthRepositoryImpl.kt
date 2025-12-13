@@ -2,16 +2,18 @@ package com.afsar.titipin.data.remote
 
 
 import android.util.Log
+import com.afsar.titipin.data.model.Bank
 import com.afsar.titipin.data.model.ChatMessage
 import com.afsar.titipin.data.model.Circle
 import com.afsar.titipin.data.model.CircleRequest
-import com.afsar.titipin.data.model.JastipOrder
-import com.afsar.titipin.data.model.JastipSession
+import com.afsar.titipin.data.model.Order
+import com.afsar.titipin.data.model.Session
 import com.afsar.titipin.data.model.PaymentInfo
 import com.afsar.titipin.data.model.User
 import com.google.firebase.auth.AuthResult
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.GoogleAuthProvider
+import com.google.firebase.firestore.FieldPath
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.Query
 import kotlinx.coroutines.channels.awaitClose
@@ -228,7 +230,7 @@ class AuthRepositoryImpl @Inject constructor(
                     id = newCircleId,
                     name = name,
                     createdBy = myUid,
-                    members = finalMembers,
+//                    members = finalMembers,
                     memberIds = memberIds,
                     isActiveSession = false
                 )
@@ -298,14 +300,14 @@ class AuthRepositoryImpl @Inject constructor(
         awaitClose { }
     }
 
-    override fun createJastipSession(session: JastipSession): Flow<Result<Boolean>> = callbackFlow {
+    override fun createJastipSession(session: Session): Flow<Result<Boolean>> = callbackFlow {
         val myUid = firebaseAuth.currentUser?.uid ?: return@callbackFlow
         val newRef = firestore.collection("sessions").document()
 
         val finalSession = session.copy(
             id = newRef.id,
             creatorId = myUid,
-            participantIds = listOf(myUid)
+//            participantIds = listOf(myUid)
         )
 
         newRef.set(finalSession)
@@ -317,7 +319,50 @@ class AuthRepositoryImpl @Inject constructor(
         awaitClose { }
     }
 
-    override fun getCircleSessions(circleId: String): Flow<Result<List<JastipSession>>> = callbackFlow {
+    // AuthRepositoryImpl.kt
+    override fun updateBankAccount(bank: Bank): Flow<Result<Boolean>> = callbackFlow {
+        val uid = firebaseAuth.currentUser?.uid
+        if (uid != null) {
+            firestore.collection("users").document(uid)
+                .update("bank", bank) // Update field "bank" dengan object baru
+                .addOnSuccessListener { trySend(Result.success(true)); close() }
+                .addOnFailureListener { trySend(Result.failure(it)); close() }
+        } else {
+            trySend(Result.failure(Exception("User not logged in"))); close()
+        }
+        awaitClose { }
+    }
+
+    // Di dalam AuthRepositoryImpl.kt
+    override fun getUsersByIds(uids: List<String>): Flow<Result<List<User>>> = callbackFlow {
+        if (uids.isEmpty()) {
+            trySend(Result.success(emptyList()))
+            close()
+            return@callbackFlow
+        }
+
+        // Firestore 'in' query maksimal 10 items. Jika member > 10, harus di-chunk.
+        // Ini contoh sederhana (maks 10 user).
+        val chunks = uids.chunked(10) // Pecah jadi list isi 10
+        // Logic fetch all chunks agak kompleks, untuk MVP ambil 10 pertama dulu atau loop.
+
+        // Cara paling aman untuk MVP:
+        firestore.collection("users")
+            .whereIn(FieldPath.documentId(), uids.take(10))
+            .get()
+            .addOnSuccessListener { snapshot ->
+                val users = snapshot.toObjects(User::class.java)
+                trySend(Result.success(users))
+                close()
+            }
+            .addOnFailureListener {
+                trySend(Result.failure(it))
+                close()
+            }
+        awaitClose { }
+    }
+
+    override fun getCircleSessions(circleId: String): Flow<Result<List<Session>>> = callbackFlow {
         firestore.collection("sessions")
             .whereEqualTo("circleId", circleId)
             // .orderBy("createdAt", Query.Direction.DESCENDING) // Removed to avoid index issues
@@ -329,7 +374,7 @@ class AuthRepositoryImpl @Inject constructor(
                 }
 
                 if (snapshot != null) {
-                    val sessions = snapshot.toObjects(JastipSession::class.java)
+                    val sessions = snapshot.toObjects(Session::class.java)
                     Log.d("DEBUG_SESSION", "Ditemukan ${sessions.size} sesi. Data: $sessions")
                     trySend(Result.success(sessions))
                 } else {
@@ -345,7 +390,7 @@ class AuthRepositoryImpl @Inject constructor(
 //        awaitClose { }
 //    }
 
-    override fun getMyJastipSessions(): Flow<Result<List<JastipSession>>> = callbackFlow {
+    override fun getMyJastipSessions(): Flow<Result<List<Session>>> = callbackFlow {
         val myUid = firebaseAuth.currentUser?.uid ?: return@callbackFlow
 
         firestore.collection("sessions")
@@ -355,22 +400,71 @@ class AuthRepositoryImpl @Inject constructor(
                     trySend(Result.failure(error))
                     return@addSnapshotListener
                 }
-                val sessions = snapshot?.toObjects(JastipSession::class.java) ?: emptyList()
+                val sessions = snapshot?.toObjects(Session::class.java) ?: emptyList()
                 trySend(Result.success(sessions))
             }
         awaitClose { }
     }
 
-    override fun getSessionOrders(sessionId: String): Flow<Result<List<JastipOrder>>> = callbackFlow {
+    override fun getSessionOrders(sessionId: String): Flow<Result<List<Order>>> = callbackFlow {
         firestore.collection("orders")
             .whereEqualTo("sessionId", sessionId)
             .addSnapshotListener { snapshot, error ->
                 if (error != null) { trySend(Result.failure(error)); return@addSnapshotListener }
-                val orders = snapshot?.toObjects(JastipOrder::class.java) ?: emptyList()
+                val orders = snapshot?.toObjects(Order::class.java) ?: emptyList()
                 trySend(Result.success(orders))
             }
         awaitClose { }
     }
+
+//    override fun getSessionDetail(sessionId: String): Flow<Result<Session>> = callbackFlow {
+//        val myUid = firebaseAuth.currentUser?.uid ?: return@callbackFlow
+//        firestore.collection("sessions")
+//            .whereEqualTo("participantIds", myUid)
+//            /
+////            .whereEqualTo("participantIds", myUid)
+//            .addSnapshotListener { snapshot, error ->
+//
+//                if (error != null) {
+//                    trySend(Result.failure(error))
+//                    return@addSnapshotListener
+//                }
+//
+//                if (snapshot != null && snapshot.exists()) {
+//                    val circle = snapshot.toObject(Circle::class.java)
+//                    if (circle != null) {
+//                        trySend(Result.success(circle))
+//                    } else {
+//                        trySend(Result.failure(Exception("Gagal parsing data circle")))
+//                    }
+//                } else {
+//                    trySend(Result.failure(Exception("Circle tidak ditemukan")))
+//                }
+//
+//            }
+////            .whereEqualTo("id", sessionId)
+////            .whereEqualTo("creatorId", myUid")
+////            .addSnapshotListener { snapshot, error ->
+////                if (error != null) {
+////                    trySend(Result.failure(error))
+////                    return@addSnapshotListener
+////                }
+////
+////                if (snapshot != null && snapshot.exists()) {
+////                    val session = snapshot.toObject(Session::class.java)
+////                    if (session != null) {
+////                        trySend(Result.success(session))
+////                    } else {
+////                        trySend(Result.failure(Exception("Gagal parsing data Session")))
+////                    }
+////                } else {
+////                    trySend(Result.failure(Exception("Session tidak ditemukan")))
+////                }
+////            }
+//
+//
+//        awaitClose { }
+//    }
 
     override fun updateOrderStatus(orderId: String, newStatus: String): Flow<Result<Boolean>> = callbackFlow {
         firestore.collection("orders").document(orderId)
@@ -380,7 +474,7 @@ class AuthRepositoryImpl @Inject constructor(
         awaitClose { }
     }
 
-    override fun createJastipOrder(order: JastipOrder): Flow<Result<Boolean>> = callbackFlow {
+    override fun createJastipOrder(order: Order): Flow<Result<Boolean>> = callbackFlow {
         val myUid = firebaseAuth.currentUser?.uid ?: return@callbackFlow
 
         firestore.collection("users").document(myUid).get().addOnSuccessListener { userDoc ->
@@ -421,27 +515,27 @@ class AuthRepositoryImpl @Inject constructor(
         awaitClose { }
     }
 
-    override fun sendSessionChatMessage(sessionId: String, message: String): Flow<Result<Boolean>> = callbackFlow {
-        val myUid = firebaseAuth.currentUser?.uid ?: return@callbackFlow
-
-        firestore.collection("users").document(myUid).get().addOnSuccessListener { doc ->
-            val userName = doc.getString("name") ?: "User"
-
-            val newMsgRef = firestore.collection("sessions").document(sessionId).collection("messages").document()
-            val chatMessage = ChatMessage(
-                id = newMsgRef.id,
-                senderId = myUid,
-                senderName = userName,
-                message = message,
-                timestamp = com.google.firebase.Timestamp.now()
-            )
-
-            newMsgRef.set(chatMessage)
-                .addOnSuccessListener { trySend(Result.success(true)) }
-                .addOnFailureListener { trySend(Result.failure(it)) }
-        }
-        awaitClose { }
-    }
+//    override fun sendSessionChatMessage(sessionId: String, message: String): Flow<Result<Boolean>> = callbackFlow {
+//        val myUid = firebaseAuth.currentUser?.uid ?: return@callbackFlow
+//
+//        firestore.collection("users").document(myUid).get().addOnSuccessListener { doc ->
+//            val userName = doc.getString("name") ?: "User"
+//
+//            val newMsgRef = firestore.collection("sessions").document(sessionId).collection("messages").document()
+//            val chatMessage = ChatMessage(
+//                id = newMsgRef.id,
+//                senderId = myUid,
+//                senderName = userName,
+//                message = message,
+//                timestamp = com.google.firebase.Timestamp.now()
+//            )
+//
+//            newMsgRef.set(chatMessage)
+//                .addOnSuccessListener { trySend(Result.success(true)) }
+//                .addOnFailureListener { trySend(Result.failure(it)) }
+//        }
+//        awaitClose { }
+//    }
 
     override fun getCurrentUserUid(): String? = firebaseAuth.currentUser?.uid
 

@@ -1,4 +1,4 @@
-package com.afsar.titipin.ui.login
+package com.afsar.titipin.ui.home.auth.login
 
 import android.app.Activity
 import android.content.Intent
@@ -55,8 +55,8 @@ import androidx.compose.ui.unit.sp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import com.afsar.titipin.R
 import com.afsar.titipin.ui.home.MainActivity
-import com.afsar.titipin.ui.register.OrSeparator
-import com.afsar.titipin.ui.register.RegisterActivity
+import com.afsar.titipin.ui.home.auth.register.OrSeparator
+import com.afsar.titipin.ui.home.auth.register.RegisterActivity
 import com.afsar.titipin.ui.theme.Primary
 import com.afsar.titipin.ui.theme.TextDarkSecondary
 import com.afsar.titipin.ui.theme.TextLightPrimary
@@ -65,15 +65,18 @@ import com.google.android.gms.auth.api.signin.GoogleSignIn
 import com.google.android.gms.auth.api.signin.GoogleSignInOptions
 
 @Composable
-fun LoginScreen(modifier: Modifier = Modifier, viewModel: LoginViewModel = hiltViewModel()) {
+fun LoginScreen(onLoginSuccess: () -> Unit,
+                onNavigateToRegister: () -> Unit,
+                viewModel: LoginViewModel = hiltViewModel()) {
     val context = LocalContext.current
     LaunchedEffect(viewModel.isLoginSuccess) {
         if (viewModel.isLoginSuccess) {
-            val intent = Intent(context, MainActivity::class.java)
-            intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
-            context.startActivity(intent)
-
-            (context as? Activity)?.finish()
+//            val intent = Intent(context, MainActivity::class.java)
+//            intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+//            context.startActivity(intent)
+//
+//            (context as? Activity)?.finish()
+            onLoginSuccess()
         }
     }
 
@@ -96,7 +99,7 @@ fun LoginScreen(modifier: Modifier = Modifier, viewModel: LoginViewModel = hiltV
     }
 
     Column (
-        modifier = modifier
+        modifier = Modifier
             .fillMaxSize()
             .padding(16.dp)
     ){
@@ -289,8 +292,9 @@ fun LoginScreen(modifier: Modifier = Modifier, viewModel: LoginViewModel = hiltV
                 interactionSource = remember { MutableInteractionSource() },
                 indication = null,
                 onClick = {
-                    val intent = Intent(context, RegisterActivity::class.java)
-                    context.startActivity(intent)
+//                    val intent = Intent(context, RegisterActivity::class.java)
+//                    context.startActivity(intent)
+                    onNavigateToRegister()
                 }
 
             )

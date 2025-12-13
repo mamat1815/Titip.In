@@ -6,32 +6,25 @@ import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.afsar.titipin.data.model.Circle
-import com.afsar.titipin.data.model.CircleRequest
-import com.afsar.titipin.data.model.User
-import com.afsar.titipin.data.remote.AuthRepository
+import com.afsar.titipin.data.remote.repository.circle.CircleRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
-import kotlinx.coroutines.Job
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import javax.inject.Inject
-import kotlin.collections.plus
 
 @HiltViewModel
 class CircleViewModel @Inject constructor(
-    private val repository: AuthRepository
+    private val repository: CircleRepository
 ) : ViewModel() {
 
-    // --- LIST CIRCLE (Home Circle) ---
+    // State dipisah agar UI bisa bereaksi terhadap Loading & Error
     var myCircles by mutableStateOf<List<Circle>>(emptyList())
+        private set
 
-    // --- CREATE CIRCLE STATE ---
-    var newCircleName by mutableStateOf("")
-    var searchQuery by mutableStateOf("")
-    var searchResults by mutableStateOf<List<User>>(emptyList())
-    var selectedMembers by mutableStateOf<List<User>>(emptyList())
-    var isCreating by mutableStateOf(false)
+    var isLoading by mutableStateOf(false)
+        private set
 
-    private var searchJob: Job? = null
+    var errorMessage by mutableStateOf<String?>(null)
+        private set
 
     init {
         loadMyCircles()
@@ -39,78 +32,20 @@ class CircleViewModel @Inject constructor(
 
     fun loadMyCircles() {
         viewModelScope.launch {
+            isLoading = true
+            errorMessage = null
+
             repository.getMyCircles().collect { result ->
-                result.onSuccess { myCircles = it }
-            }
-        }
-    }
+                isLoading = false // Stop loading saat data diterima
 
-    // --- SEARCH USER LOGIC ---
-    fun onSearchQueryChange(query: String) {
-        searchQuery = query
-        searchJob?.cancel()
-        searchJob = viewModelScope.launch {
-            delay(500)
-            if (query.isNotEmpty()) {
-                repository.searchUsers(query).collect { result ->
-                    result.onSuccess { searchResults = it }
+                result.onSuccess { circles ->
+                    myCircles = circles
+                    errorMessage = null
                 }
-            } else {
-                searchResults = emptyList()
+                result.onFailure { error ->
+                    errorMessage = error.message ?: "Gagal memuat circle"
+                }
             }
         }
     }
-
-    // Tambah member ke list seleksi
-    fun addMemberToSelection(user: User) {
-        if (!selectedMembers.contains(user)) {
-            selectedMembers = selectedMembers + user
-        }
-        // Reset search biar bersih
-        searchQuery = ""
-        searchResults = emptyList()
-    }
-
-    // Hapus member dari seleksi
-    fun removeMemberFromSelection(user: User) {
-        selectedMembers = selectedMembers - user
-    }
-
-    // Create Circle Final
-    fun createCircle(onSuccess: () -> Unit) {
-        if (newCircleName.isBlank()) return
-
-        isCreating = true
-        viewModelScope.launch {
-            repository.createCircle(newCircleName, selectedMembers).collect {
-                isCreating = false
-                onSuccess()
-                // Reset State
-                newCircleName = ""
-                selectedMembers = emptyList()
-                loadMyCircles() // Refresh list utama
-            }
-        }
-    }
-
-    var isSearching by mutableStateOf(false)
-
-    // --- Request State ---
-    var incomingRequests by mutableStateOf<List<CircleRequest>>(emptyList())
-
-
-//    init {
-//        loadIncomingRequests()
-//    }
-//
-//
-//    fun loadIncomingRequests() {
-//        viewModelScope.launch {
-//            repository.getIncomingRequests().collect { result ->
-//                result.onSuccess { incomingRequests = it }
-//            }
-//        }
-//    }
-
-
 }

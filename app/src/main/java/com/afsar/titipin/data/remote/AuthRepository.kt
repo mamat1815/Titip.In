@@ -1,10 +1,11 @@
 package com.afsar.titipin.data.remote
 
+import com.afsar.titipin.data.model.Bank
 import com.afsar.titipin.data.model.ChatMessage
 import com.afsar.titipin.data.model.Circle
 import com.afsar.titipin.data.model.CircleRequest
-import com.afsar.titipin.data.model.JastipOrder
-import com.afsar.titipin.data.model.JastipSession
+import com.afsar.titipin.data.model.Order
+import com.afsar.titipin.data.model.Session
 import com.afsar.titipin.data.model.PaymentInfo
 import com.afsar.titipin.data.model.User
 import com.google.firebase.auth.AuthResult
@@ -36,16 +37,20 @@ interface AuthRepository {
 
 
     //    Session
-    fun createJastipSession(session: JastipSession): Flow<Result<Boolean>>
-    fun getCircleSessions(circleId: String): Flow<Result<List<JastipSession>>>
-    fun getMyJastipSessions(): Flow<Result<List<JastipSession>>>
-    fun getSessionOrders(sessionId: String): Flow<Result<List<JastipOrder>>>
-    fun sendSessionChatMessage(sessionId: String, message: String): Flow<Result<Boolean>>
+    fun createJastipSession(session: Session): Flow<Result<Boolean>>
+    fun getUsersByIds(uids: List<String>): Flow<Result<List<User>>>
+    fun getCircleSessions(circleId: String): Flow<Result<List<Session>>>
+
+    fun getMyJastipSessions(): Flow<Result<List<Session>>>
+
+    fun getSessionOrders(sessionId: String): Flow<Result<List<Order>>>
+
+//    fun sendSessionChatMessage(sessionId: String, message: String): Flow<Result<Boolean>>
     fun updateSessionStatus(sessionId: String, newStatus: String): Flow<Result<Boolean>>
     fun toggleRevisionMode(sessionId: String, isRevision: Boolean): Flow<Result<Boolean>>
-
+    fun updateBankAccount(bank: Bank): Flow<Result<Boolean>>
     //    Order
-    fun createJastipOrder(order: JastipOrder): Flow<Result<Boolean>>
+    fun createJastipOrder(order: Order): Flow<Result<Boolean>>
     fun updateOrderStatus(orderId: String, newStatus: String): Flow<Result<Boolean>>
     fun getSessionChatMessages(sessionId: String): Flow<Result<List<ChatMessage>>>
     fun listenToPaymentsBySessionAndUser(sessionId: String, userId: String): Flow<Result<List<PaymentInfo>>>

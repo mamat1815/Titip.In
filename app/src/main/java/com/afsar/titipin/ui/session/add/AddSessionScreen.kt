@@ -1,4 +1,5 @@
-package com.afsar.titipin.ui.session
+package com.afsar.titipin.ui.session.add
+
 import android.Manifest
 import android.content.pm.PackageManager
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -7,8 +8,6 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -36,6 +35,7 @@ import androidx.compose.ui.unit.sp
 import androidx.core.content.ContextCompat
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.afsar.titipin.data.model.Circle
+import com.afsar.titipin.ui.session.LocationPickerDialog
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -43,15 +43,17 @@ fun CreateSessionScreen(
     onBackClick: () -> Unit,
     viewModel: CreateSessionViewModel = hiltViewModel()
 ) {
-
     val context = LocalContext.current
     var showMapDialog by remember { mutableStateOf(false) }
+
+    // Navigasi Balik jika Sukses
     LaunchedEffect(viewModel.isSuccess) {
         if (viewModel.isSuccess) {
             onBackClick()
         }
     }
 
+    // Permission Handler
     val locationPermissionLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.RequestMultiplePermissions()
     ) { permissions ->
@@ -63,6 +65,7 @@ fun CreateSessionScreen(
         }
     }
 
+    // Dialog Peta
     if (showMapDialog) {
         LocationPickerDialog(
             onDismiss = { showMapDialog = false },
@@ -72,6 +75,7 @@ fun CreateSessionScreen(
             }
         )
     }
+
     Scaffold(
         topBar = {
             TopAppBar(
@@ -85,7 +89,6 @@ fun CreateSessionScreen(
             )
         },
         bottomBar = {
-
             Button(
                 onClick = { viewModel.createSession() },
                 modifier = Modifier
@@ -112,20 +115,29 @@ fun CreateSessionScreen(
                 .padding(padding)
                 .fillMaxSize()
                 .padding(horizontal = 16.dp)
-                .padding(bottom = 16.dp)
                 .verticalScroll(rememberScrollState())
         ) {
-
+            // Error Message
             if (viewModel.errorMessage != null) {
-                Text(viewModel.errorMessage!!, color = Color.Red, fontSize = 12.sp, modifier = Modifier.padding(bottom = 8.dp))
+                Card(
+                    colors = CardDefaults.cardColors(containerColor = Color(0xFFFFEBEE)),
+                    modifier = Modifier.fillMaxWidth().padding(bottom = 16.dp)
+                ) {
+                    Text(
+                        text = viewModel.errorMessage!!,
+                        color = Color.Red,
+                        fontSize = 12.sp,
+                        modifier = Modifier.padding(12.dp)
+                    )
+                }
             }
 
-
+            // Input Fields
             InputLabel("Judul Sesi")
             OutlinedTextField(
                 value = viewModel.title,
                 onValueChange = { viewModel.title = it },
-                placeholder = { Text("Mau titip apa?") },
+                placeholder = { Text("Mau titip apa? (Contoh: Jajan di Indomaret)") },
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(12.dp),
                 colors = TextFieldDefaults.colors(
@@ -137,12 +149,11 @@ fun CreateSessionScreen(
 
             Spacer(modifier = Modifier.height(16.dp))
 
-
             InputLabel("Deskripsi Singkat (Opsional)")
             OutlinedTextField(
                 value = viewModel.description,
                 onValueChange = { viewModel.description = it },
-                placeholder = { Text("Tulis catatan tambahan di sini...") },
+                placeholder = { Text("Catatan tambahan (misal: Tutup jam 2)") },
                 modifier = Modifier.fillMaxWidth().height(100.dp),
                 shape = RoundedCornerShape(12.dp),
                 colors = TextFieldDefaults.colors(
@@ -158,9 +169,9 @@ fun CreateSessionScreen(
                 value = viewModel.locationName,
                 onValueChange = { viewModel.locationName = it },
                 placeholder = { Text("Pilih lokasi dari peta...") },
+                readOnly = false, // Bisa diedit manual kalau mau
                 trailingIcon = {
                     Row {
-
                         IconButton(onClick = {
                             if (ContextCompat.checkSelfPermission(context, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
                                 viewModel.fetchCurrentLocation(context)
@@ -171,7 +182,11 @@ fun CreateSessionScreen(
                                 ))
                             }
                         }) {
-                            Icon(Icons.Default.MyLocation, contentDescription = "Current Location", tint = Color(0xFF370061))
+                            if(viewModel.isLoading) {
+                                CircularProgressIndicator(modifier = Modifier.size(24.dp), strokeWidth = 2.dp)
+                            } else {
+                                Icon(Icons.Default.MyLocation, contentDescription = "Current Location", tint = Color(0xFF370061))
+                            }
                         }
 
                         IconButton(onClick = { showMapDialog = true }) {
@@ -184,15 +199,14 @@ fun CreateSessionScreen(
                 colors = TextFieldDefaults.colors(
                     focusedContainerColor = Color.White,
                     unfocusedContainerColor = Color.White
-                ),
-
-                // readOnly = false
+                )
             )
+
             Spacer(modifier = Modifier.height(16.dp))
 
             InputLabel("Durasi Sesi")
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                listOf(5, 10, 15).forEach { mins ->
+                listOf(5, 10, 15, 30, 60).forEach { mins ->
                     DurationChip(
                         minutes = mins,
                         isSelected = viewModel.selectedDuration == mins,
@@ -256,11 +270,11 @@ fun CreateSessionScreen(
                     }
                 }
             }
+            // Spacer tambahan agar tidak tertutup button bottom bar
+            Spacer(modifier = Modifier.height(100.dp))
         }
     }
 }
-
-// --- SUB-COMPONENTS ---
 
 @Composable
 fun InputLabel(text: String) {
@@ -281,7 +295,7 @@ fun DurationChip(minutes: Int, isSelected: Boolean, onClick: () -> Unit) {
 
     Box(
         modifier = Modifier
-            .width(80.dp)
+            .width(60.dp)
             .height(40.dp)
             .clip(RoundedCornerShape(8.dp))
             .background(bgColor)
@@ -289,7 +303,7 @@ fun DurationChip(minutes: Int, isSelected: Boolean, onClick: () -> Unit) {
             .clickable { onClick() },
         contentAlignment = Alignment.Center
     ) {
-        Text("$minutes mnt", color = textColor, fontWeight = FontWeight.Medium)
+        Text("$minutes m", color = textColor, fontWeight = FontWeight.Medium, fontSize = 12.sp)
     }
 }
 
@@ -304,14 +318,12 @@ fun CounterInput(value: Int, onIncrement: () -> Unit, onDecrement: () -> Unit) {
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.SpaceBetween
     ) {
-        // Tombol Minus
         IconButton(onClick = onDecrement, modifier = Modifier.background(Color(0xFFF5F5F5), RoundedCornerShape(topStart = 12.dp, bottomStart = 12.dp))) {
             Icon(Icons.Default.Remove, contentDescription = "Decrease", tint = Color.Gray)
         }
 
-        Text(text = value.toString(), fontWeight = FontWeight.Bold, fontSize = 16.sp)
+        Text(text = "$value Orang", fontWeight = FontWeight.Bold, fontSize = 16.sp)
 
-        // Tombol Plus
         IconButton(onClick = onIncrement, modifier = Modifier.background(Color(0xFFF5F5F5), RoundedCornerShape(topEnd = 12.dp, bottomEnd = 12.dp))) {
             Icon(Icons.Default.Add, contentDescription = "Increase", tint = Color.Gray)
         }
@@ -327,7 +339,6 @@ fun CircleSelectionItem(circle: Circle, isSelected: Boolean, onClick: () -> Unit
             .padding(vertical = 12.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        // Radio Button (Custom Look)
         Icon(
             imageVector = if (isSelected) Icons.Default.RadioButtonChecked else Icons.Default.RadioButtonUnchecked,
             contentDescription = null,
@@ -337,24 +348,22 @@ fun CircleSelectionItem(circle: Circle, isSelected: Boolean, onClick: () -> Unit
 
         Spacer(modifier = Modifier.width(12.dp))
 
-        // Avatar Circle
         Box(
             modifier = Modifier
                 .size(40.dp)
                 .clip(CircleShape)
-                .background(Color(0xFFFFF3E0)), // Warna krem seperti di desain
+                .background(Color(0xFFFFF3E0)),
             contentAlignment = Alignment.Center
         ) {
-            // Bisa ganti AsyncImage jika circle punya foto
             Icon(Icons.Default.Group, contentDescription = null, tint = Color(0xFF795548))
         }
 
         Spacer(modifier = Modifier.width(12.dp))
 
-        // Info Circle
         Column {
             Text(circle.name, fontWeight = FontWeight.Bold, fontSize = 14.sp)
-            Text("${circle.members.size} anggota", fontSize = 12.sp, color = Color.Gray)
+            // Menampilkan jumlah anggota dengan benar
+            Text("${circle.memberIds.size} anggota", fontSize = 12.sp, color = Color.Gray)
         }
     }
 }

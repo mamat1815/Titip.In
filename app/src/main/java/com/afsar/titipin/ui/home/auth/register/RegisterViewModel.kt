@@ -1,4 +1,4 @@
-package com.afsar.titipin.ui.login
+package com.afsar.titipin.ui.home.auth.register
 
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -14,39 +14,17 @@ import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 @HiltViewModel
-class LoginViewModel @Inject constructor(
+class RegisterViewModel @Inject constructor(
     private val repository: AuthRepository
 ) : ViewModel() {
 
+    var nameInput by mutableStateOf("")
+    var usernameInput by mutableStateOf("")
     var emailInput by mutableStateOf("")
     var passwordInput by mutableStateOf("")
-
     var isLoading by mutableStateOf(false)
     var errorMessage by mutableStateOf<String?>(null)
-    var isLoginSuccess by mutableStateOf(false)
-
-    fun onLoginClicked() {
-        if (emailInput.isBlank() || passwordInput.isBlank()) {
-            errorMessage = "Email dan Password tidak boleh kosong"
-            return
-        }
-
-        isLoading = true
-        errorMessage = null
-
-        viewModelScope.launch {
-            repository.login(emailInput, passwordInput)
-                .collect { result ->
-                    isLoading = false
-                    result.onSuccess {
-                        isLoginSuccess = true
-                    }
-                    result.onFailure { error ->
-                        errorMessage = error.localizedMessage ?: "Login Gagal"
-                    }
-                }
-        }
-    }
+    var isRegisterSuccess by mutableStateOf(false)
 
     fun onGoogleSignInResult(task: Task<GoogleSignInAccount>) {
         try {
@@ -60,7 +38,7 @@ class LoginViewModel @Inject constructor(
                 viewModelScope.launch {
                     repository.loginWithGoogle(idToken).collect { result ->
                         isLoading = false
-                        result.onSuccess { isLoginSuccess = true }
+                        result.onSuccess { isRegisterSuccess = true }
                         result.onFailure { errorMessage = it.localizedMessage ?: "Google Sign-In Gagal" }
                     }
                 }
@@ -71,10 +49,27 @@ class LoginViewModel @Inject constructor(
             errorMessage = "Google Sign-In Error: ${e.message}"
         }
     }
-    fun checkActiveSession() {
-        val currentUser = repository.getCurrentUserUid()
-        if (currentUser != null) {
-            isLoginSuccess = true
+
+    fun onRegisterClicked() {
+        if (nameInput.isBlank() || usernameInput.isBlank() || emailInput.isBlank() || passwordInput.isBlank()) {
+            errorMessage = "Semua kolom wajib diisi!"
+            return
+        }
+
+        isLoading = true
+        errorMessage = null
+
+        viewModelScope.launch {
+            repository.register(nameInput, usernameInput, emailInput, passwordInput)
+                .collect { result ->
+                    isLoading = false
+                    result.onSuccess {
+                        isRegisterSuccess = true
+                    }
+                    result.onFailure { error ->
+                        errorMessage = error.localizedMessage ?: "Terjadi kesalahan saat mendaftar"
+                    }
+                }
         }
     }
 }

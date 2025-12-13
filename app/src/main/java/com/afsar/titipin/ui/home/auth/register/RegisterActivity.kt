@@ -1,4 +1,4 @@
-package com.afsar.titipin.ui.register
+package com.afsar.titipin.ui.home.auth.register
 
 import android.app.Activity
 import android.content.Intent
@@ -65,7 +65,7 @@ import com.afsar.titipin.ui.theme.TextDarkSecondary
 import com.afsar.titipin.ui.theme.TextLightPrimary
 import com.afsar.titipin.ui.theme.TitipInTheme
 import com.afsar.titipin.ui.theme.jakartaFamily
-import com.afsar.titipin.ui.login.LoginActivity
+import com.afsar.titipin.ui.home.auth.login.LoginActivity
 import com.afsar.titipin.ui.home.MainActivity
 import com.google.android.gms.auth.api.signin.GoogleSignIn
 
