@@ -20,27 +20,24 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.titipin.R
 import com.example.titipin.ui.theme.*
+import com.example.titipin.ui.viewmodel.UploadReceiptViewModel
+import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.compose.runtime.collectAsState
+import com.example.titipin.data.model.ReceiptItem
 
 @Composable
 fun UploadReceiptScreen(
     onBackClick: () -> Unit = {},
     onScanReceiptClick: () -> Unit = {},
-    onAssignClick: () -> Unit = {},
-    onChatClick: () -> Unit = {}
+    onChatClick: () -> Unit = {},
+    onContinueToPayment: () -> Unit = {},
+    viewModel: UploadReceiptViewModel = viewModel()
 ) {
-    // Dummy receipt data
-    val receiptItems = remember {
-        listOf(
-            ReceiptItem("Indomie Goreng", 2, "Budi", 6000),
-            ReceiptItem("Susu Ultra Milk Cokelat 1L", 1, "Siti", 18000),
-            ReceiptItem("Teh Botol Kotak", 3, "Tidak assign", 15000),
-            ReceiptItem("Air Mineral", 2, "Budi", 6000)
-        )
-    }
-    
-    val assignedCount = receiptItems.count { it.assignedTo != "Tidak assign" }
-    val totalCount = receiptItems.size
-    val progress = assignedCount.toFloat() / totalCount.toFloat()
+    // Collect state from ViewModel
+    val receiptItems by viewModel.receiptItems.collectAsState()
+    val assignedCount by viewModel.assignedCount.collectAsState()
+    val totalCount by viewModel.totalCount.collectAsState()
+    val progress by viewModel.progress.collectAsState()
     
     Box(modifier = Modifier.fillMaxSize()) {
         Scaffold(
@@ -142,7 +139,7 @@ fun UploadReceiptScreen(
                             Spacer(modifier = Modifier.height(8.dp))
                             
                             Text(
-                                text = "Berikut adalah hasil scanning struk. Penitip akan meng-assign barang sesuai pesanan mereka masing-masing.",
+                                text = "Anda dapat melihat live assign yang dilakukan penitip di bawah. Pembeli hanya memantau, tidak bisa assign.",
                                 fontSize = 13.sp,
                                 color = TextSecondary,
                                 lineHeight = 18.sp
@@ -164,7 +161,7 @@ fun UploadReceiptScreen(
                         modifier = Modifier
                             .fillMaxWidth()
                             .padding(horizontal = 16.dp)
-                            .clickable { onAssignClick() },
+                            .clickable { if (assignedCount == totalCount) onContinueToPayment() },
                         colors = CardDefaults.cardColors(containerColor = Color.White),
                         shape = RoundedCornerShape(12.dp),
                         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
@@ -220,12 +217,25 @@ fun UploadReceiptScreen(
                                     modifier = Modifier.weight(1f)
                                 )
                                 
-                                Icon(
-                                    Icons.Default.ChevronRight,
-                                    contentDescription = "Next",
-                                    tint = TextSecondary,
-                                    modifier = Modifier.size(20.dp)
-                                )
+                                // Gimmick button to payment
+                                Row(
+                                    modifier = Modifier.clickable { onContinueToPayment() },
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.spacedBy(4.dp)
+                                ) {
+                                    Text(
+                                        text = "Lanjut",
+                                        fontSize = 12.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        color = PrimaryColor
+                                    )
+                                    Icon(
+                                        Icons.Default.ChevronRight,
+                                        contentDescription = "Next",
+                                        tint = PrimaryColor,
+                                        modifier = Modifier.size(16.dp)
+                                    )
+                                }
                             }
                         }
                     }

@@ -119,6 +119,21 @@ class MainActivity : ComponentActivity() {
                             },
                             onNavigateToHistory = {
                                 navController.navigate("history")
+                            },
+                            onNavigateToRequest = {
+                                navController.navigate("request_item")
+                            }
+                        )
+                    }
+
+                    // Rute Request Item (Penitip)
+                    composable("request_item") {
+                        RequestItemScreen(
+                            onBackClick = { navController.navigateUp() },
+                            onSubmitClick = {
+                                navController.navigate("titipanku") {
+                                    popUpTo("home") { saveState = true }
+                                }
                             }
                         )
                     }
@@ -137,7 +152,40 @@ class MainActivity : ComponentActivity() {
                                     launchSingleTop = true
                                     restoreState = true
                                 }
+                            },
+                            onNavigateToInProgress = {
+                                navController.navigate("in_progress")
                             }
+                        )
+                    }
+
+                    // Rute In Progress (Penitip POV)
+                    composable("in_progress") {
+                        InProgressScreen(
+                            onBackClick = { navController.navigateUp() },
+                            onChatClick = { navController.navigate("session_chat") },
+                            onAutoNavigateToAssignment = {
+                                navController.navigate("penitip_live_assignment")
+                            }
+                        )
+                    }
+
+                    // Rute Penitip Live Assignment
+                    composable("penitip_live_assignment") {
+                        PenitipLiveAssignmentScreen(
+                            onBackClick = { navController.navigateUp() },
+                            onChatClick = { navController.navigate("session_chat") },
+                            onAllAssigned = {
+                                navController.navigate("penitip_payment")
+                            }
+                        )
+                    }
+
+                    // Rute Penitip Payment
+                    composable("penitip_payment") {
+                        PenitipPaymentScreen(
+                            onBackClick = { navController.navigateUp() },
+                            onChatClick = { navController.navigate("session_chat") }
                         )
                     }
 
@@ -200,9 +248,7 @@ class MainActivity : ComponentActivity() {
                                 }
                             },
                             onNavigateToShopping = {
-                                navController.navigate("shopping_list") {
-                                    popUpTo("session_detail") { inclusive = true }
-                                }
+                                navController.navigate("shopping_list")
                             }
                         )
                     }
@@ -255,11 +301,11 @@ class MainActivity : ComponentActivity() {
                             onScanReceiptClick = {
                                 navController.navigate("receipt_scanner")
                             },
-                            onAssignClick = {
-                                navController.navigate("payment_delivery")
-                            },
                             onChatClick = {
                                 navController.navigate("session_chat")
+                            },
+                            onContinueToPayment = {
+                                navController.navigate("payment_delivery")
                             }
                         )
                     }
@@ -287,6 +333,13 @@ class MainActivity : ComponentActivity() {
                                     popUpTo("item_assignment") { inclusive = true }
                                 }
                             }
+                        )
+                    }
+
+                    // Rute Penitip Status
+                    composable("penitip_status") {
+                        PenitipStatusScreen(
+                            onBackClick = { navController.navigateUp() }
                         )
                     }
                     

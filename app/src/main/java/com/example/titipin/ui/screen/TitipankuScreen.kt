@@ -22,71 +22,21 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.titipin.R
 import com.example.titipin.ui.theme.*
+import com.example.titipin.ui.viewmodel.TitipankuViewModel
+import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.compose.runtime.collectAsState
+import com.example.titipin.data.model.*
 
 @Composable
 fun TitipankuScreen(
     onNavigateToHome: () -> Unit = {},
-    onNavigateToProfile: () -> Unit = {}
+    onNavigateToProfile: () -> Unit = {},
+    onNavigateToInProgress: () -> Unit = {},
+    viewModel: TitipankuViewModel = viewModel()
 ) {
-    // ===== DUMMY DATA - EDIT DI SINI =====
-    
-    // Tab "Titip" - User titip barang ke orang lain
-    val titipSessions = listOf(
-        TitipSession(
-            id = 1,
-            title = "Titip Jajan di Kantin",
-            recipientName = "Andi",
-            location = "Kantin Gedung A",
-            category = "Makanan/Minuman",
-            iconRes = R.drawable.ic_makanan,
-            status = TitipStatus.MENUNGGU_ACCEPT,
-            amount = "Rp 25.000"
-        ),
-        TitipSession(
-            id = 2,
-            title = "Belanja Indomaret",
-            recipientName = "Budi",
-            location = "Indomaret Jakal",
-            category = "Belanjaan",
-            iconRes = R.drawable.ic_belanja,
-            status = TitipStatus.DIPROSES,
-            amount = "Rp 50.000"
-        ),
-        TitipSession(
-            id = 3,
-            title = "Beli Obat",
-            recipientName = "Cici",
-            location = "Apotek K24",
-            category = "Obat-obatan",
-            iconRes = R.drawable.ic_obat,
-            status = TitipStatus.BAYAR_DAN_ANTAR,
-            amount = "Rp 100.000"
-        )
-    )
-    
-    // Tab "Dititipi" - User buka jasa titipan
-    val dititipiSessions = listOf(
-        DititipiSession(
-            id = 2,
-            title = "Pizza Hut",
-            location = "Pizza Hut Hartono Mall",
-            category = "Makanan/Minuman",
-            iconRes = R.drawable.ic_makanan,
-            participantCount = 5,
-            status = DititipiStatus.MENUNGGU_PESANAN,
-            timeRemaining = "01:30:07"
-        ),
-        DititipiSession(
-            id = 1,
-            title = "Alfamart Jakal",
-            location = "Alfamart Pogung",
-            category = "Belanjaan",
-            iconRes = R.drawable.ic_belanja,
-            participantCount = 3,
-            status = DititipiStatus.SEDANG_DIPROSES,
-            timeRemaining = "00:45:12"
-        )
-    )
+    // Collect state from ViewModel
+    val titipSessions by viewModel.titipSessions.collectAsState()
+    val dititipiSessions by viewModel.dititipiSessions.collectAsState()
     
     // ===== END DUMMY DATA =====
     
@@ -182,8 +132,18 @@ fun TitipankuScreen(
                     if (titipSessions.isEmpty()) {
                         EmptyState("Belum ada titipan")
                     } else {
-                        titipSessions.forEach { session ->
-                            TitipSessionCard(session)
+                        titipSessions.forEachIndexed { index, session ->
+                            TitipSessionCard(
+                                session = session, 
+                                onClick = {
+                                    if (session.status == TitipStatus.MENUNGGU_ACCEPT) {
+                                        viewModel.toggleSessionStatus(session.id)
+                                    } else if (session.status == TitipStatus.DIPROSES) {
+                                        onNavigateToInProgress()
+                                    }
+                                    // DITOLAK tidak clickable
+                                }
+                            )
                             Spacer(modifier = Modifier.height(12.dp))
                         }
                     }
@@ -208,13 +168,13 @@ fun TitipankuScreen(
 
 // Card untuk Tab "Titip"
 @Composable
-fun TitipSessionCard(session: TitipSession) {
+fun TitipSessionCard(session: TitipSession, onClick: () -> Unit) {
     Card(
         modifier = Modifier.fillMaxWidth(),
         colors = CardDefaults.cardColors(containerColor = CardLight),
         shape = RoundedCornerShape(16.dp),
         border = BorderStroke(1.dp, Color(0xFFE1DAE7)),
-        onClick = { /* Navigate to detail */ }
+        onClick = onClick
     ) {
         Row(
             modifier = Modifier
@@ -303,7 +263,7 @@ fun TitipSessionCard(session: TitipSession) {
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Text(
-                        text = session.amount,
+                        text = if (session.status == TitipStatus.MENUNGGU_ACCEPT) "${session.requestQty} Item (${session.requestItem})" else session.amount,
                         fontSize = 15.sp,
                         fontWeight = FontWeight.Bold,
                         color = PrimaryColor
@@ -474,42 +434,3 @@ fun EmptyState(message: String) {
     }
 }
 
-// ===== DATA CLASSES & ENUMS =====
-
-// Status untuk "Titip" (user menitipkan)
-enum class TitipStatus(val displayName: String, val color: Color) {
-    MENUNGGU_ACCEPT("Menunggu Accept", Color(0xFFF59E0B)), // Orange
-    DIPROSES("Diproses", Color(0xFF3B82F6)), // Blue
-    BAYAR_DAN_ANTAR("Bayar & Antar", Color(0xFF10B981)) // Green
-}
-
-// Status untuk "Dititipi" (user buka jasa)
-enum class DititipiStatus(val displayName: String, val color: Color) {
-    MENUNGGU_PESANAN("Menunggu Pesanan", Color(0xFFF59E0B)), // Orange
-    SEDANG_DIPROSES("Sedang Diproses", Color(0xFF3B82F6)), // Blue
-    SELESAI("Selesai", Color(0xFF6B7280)) // Gray
-}
-
-// Data class untuk Tab "Titip"
-data class TitipSession(
-    val id: Int,
-    val title: String,
-    val recipientName: String, // Nama orang yang dititipi
-    val location: String,
-    val category: String,
-    val iconRes: Int,
-    val status: TitipStatus,
-    val amount: String
-)
-
-// Data class untuk Tab "Dititipi"
-data class DititipiSession(
-    val id: Int,
-    val title: String,
-    val location: String,
-    val category: String,
-    val iconRes: Int,
-    val participantCount: Int,
-    val status: DititipiStatus,
-    val timeRemaining: String
-)

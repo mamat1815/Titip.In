@@ -27,7 +27,8 @@ fun HomeScreen(
     onNavigateToCreate: () -> Unit,
     onNavigateToTitipanku: () -> Unit = {},
     onNavigateToProfile: () -> Unit = {},
-    onNavigateToHistory: () -> Unit = {}
+    onNavigateToHistory: () -> Unit = {},
+    onNavigateToRequest: () -> Unit = {}
 ) {
     // ===== DUMMY DATA - BISA DIUBAH-UBAH DI SINI =====
     
@@ -112,6 +113,13 @@ fun HomeScreen(
             // Header dengan Profile & Notifikasi
             HeaderSection(profileImageRes = profileImageRes)
 
+            Spacer(modifier = Modifier.height(16.dp))
+            
+            // Notification "Open Jastip"
+            Column(modifier = Modifier.padding(horizontal = 16.dp)) {
+                OpenJastipNotification(onTitipClick = onNavigateToRequest)
+            }
+
             // Main Content
             Column(
                 modifier = Modifier
@@ -120,9 +128,9 @@ fun HomeScreen(
             ) {
                 // Title
                 Text(
-                    text = "Mau titip/dititipi apa?",
-                    fontSize = 24.sp,
-                    fontWeight = FontWeight.Medium,
+                    text = "Hai Syauqi, Mau titip apa hari ini?",
+                    fontSize = 18.sp,
+                    fontWeight = FontWeight.Bold,
                     color = TextPrimary,
                     modifier = Modifier.padding(top = 24.dp, bottom = 12.dp)
                 )
@@ -645,5 +653,51 @@ fun BottomNavBar(
                 unselectedTextColor = TextSecondary
             )
         )
+    }
+}
+
+@Composable
+fun OpenJastipNotification(onTitipClick: () -> Unit) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(containerColor = Color(0xFFFFF3E0)), // Light Orange
+        shape = RoundedCornerShape(16.dp),
+        border = BorderStroke(1.dp, Color(0xFFFFB74D))
+    ) {
+        Column(modifier = Modifier.padding(16.dp)) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Icon(
+                    Icons.Default.NotificationsActive, 
+                    contentDescription = null,
+                    tint = Color(0xFFF57C00)
+                )
+                Spacer(modifier = Modifier.width(8.dp))
+                Text(
+                    text = "Temanmu sedang buka Jastip!",
+                    fontWeight = FontWeight.Bold,
+                    color = Color(0xFFE65100)
+                )
+            }
+            Spacer(modifier = Modifier.height(8.dp))
+            Text(
+                text = "Fulan (Indomaret Jakal)",
+                fontSize = 16.sp,
+                fontWeight = FontWeight.Bold,
+                color = TextPrimary
+            )
+            Text(
+                text = "Lagi di Indomaret nih, ada yang mau titip?",
+                fontSize = 14.sp,
+                color = TextSecondary
+            )
+            Spacer(modifier = Modifier.height(12.dp))
+            Button(
+                onClick = onTitipClick,
+                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFF57C00)),
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Text("Titip Sekarang")
+            }
+        }
     }
 }

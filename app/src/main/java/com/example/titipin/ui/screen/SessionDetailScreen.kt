@@ -24,6 +24,10 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.titipin.R
 import com.example.titipin.ui.theme.*
+import com.example.titipin.ui.viewmodel.SessionDetailViewModel
+import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.compose.runtime.collectAsState
+import com.example.titipin.data.model.*
 import kotlinx.coroutines.delay
 
 @Composable
@@ -32,65 +36,19 @@ fun SessionDetailScreen(
     onNavigateToHome: () -> Unit = {},
     onNavigateToTitipanku: () -> Unit = {},
     onNavigateToProfile: () -> Unit = {},
-    onNavigateToShopping: () -> Unit = {}
+    onNavigateToShopping: () -> Unit = {},
+    viewModel: SessionDetailViewModel = viewModel()
 ) {
-    // Dummy data
-    var selectedTab by remember { mutableStateOf(0) }
-    var timeRemaining by remember { mutableStateOf(14 * 60 + 32) } // 14:32 in seconds
+    // Collect state from ViewModel
+    val participants by viewModel.participants.collectAsState()
+    val selectedTab by viewModel.selectedTab.collectAsState()
+    val timeRemaining by viewModel.timeRemaining.collectAsState()
     
-    // Countdown timer
-    LaunchedEffect(Unit) {
-        while (timeRemaining > 0) {
-            delay(1000)
-            timeRemaining--
+    // Navigate to shopping when timer ends
+    LaunchedEffect(timeRemaining) {
+        if (timeRemaining == 0) {
+            onNavigateToShopping()
         }
-        // Navigate to shopping when timer ends
-        onNavigateToShopping()
-    }
-    
-    val participants = remember {
-        mutableStateListOf(
-            ParticipantRequest(
-                id = 1,
-                name = "Budi Santoso",
-                circleName = "Teman Kantor",
-                orderItems = listOf(
-                    OrderItem("Air Le mineral", 1),
-                    OrderItem("Indomie Goreng", 2),
-                    OrderItem("Teh Pucuk Harum", 1)
-                ),
-                notes = "Indomie nya rasa rendang",
-                amount = "Rp 25.000",
-                status = RequestStatus.PENDING,
-                avatarRes = R.drawable.ic_profile1
-            ),
-            ParticipantRequest(
-                id = 2,
-                name = "Citra Lestari",
-                circleName = "Mabar Valorant",
-                orderItems = listOf(
-                    OrderItem("Chocolatos Matcha Sachet", 3),
-                    OrderItem("Nabati Richeese", 2)
-                ),
-                notes = "-",
-                amount = "Rp 30.000",
-                status = RequestStatus.PENDING,
-                avatarRes = R.drawable.ic_profile2
-            ),
-            ParticipantRequest(
-                id = 3,
-                name = "Eko Wibowo",
-                circleName = "Anak Fasilkom",
-                orderItems = listOf(
-                    OrderItem("Aqua Botol", 2),
-                    OrderItem("Roti Aoka Coklat", 1)
-                ),
-                notes = "",
-                amount = "Rp 15.000",
-                status = RequestStatus.ACCEPTED,
-                avatarRes = R.drawable.ic_profile1
-            )
-        )
     }
     
     val tabs = listOf("Menunggu", "Diterima", "Ditolak")
@@ -122,16 +80,17 @@ fun SessionDetailScreen(
             }
         },
         bottomBar = {
-            com.example.titipin.ui.screen.BottomNavBar(
-                selectedTab = -1,
-                onTabSelected = { tab: Int ->
-                    when (tab) {
-                        0 -> onNavigateToHome()
-                        1 -> onNavigateToTitipanku()
-                        2 -> onNavigateToProfile()
-                    }
-                }
-            )
+            Button(
+                onClick = onNavigateToShopping,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(16.dp)
+                    .height(56.dp),
+                shape = RoundedCornerShape(12.dp),
+                colors = ButtonDefaults.buttonColors(containerColor = PrimaryColor)
+            ) {
+                Text("Lanjut Belanja", fontSize = 16.sp, fontWeight = FontWeight.Bold)
+            }
         }
     ) { paddingValues ->
         LazyColumn(
@@ -186,7 +145,7 @@ fun SessionDetailScreen(
                         
                         Tab(
                             selected = selectedTab == index,
-                            onClick = { selectedTab = index },
+                            onClick = { viewModel.selectTab(index) },
                             text = {
                                 Text(
                                     text = "$title ($count)",
@@ -212,9 +171,11 @@ fun SessionDetailScreen(
                     participant = participant,
                     participants = participants,
                     onAccept = {
-                        participants.remove(participant)
+                        viewModel.acceptRequest(participant.id)
                     },
-                    onReject = { /* Handle reject */ }
+                    onReject = {
+                        viewModel.rejectRequest(participant.id)
+                    }
                 )
             }
             
@@ -366,19 +327,6 @@ fun CountdownSection(
                 )
                 TimeDisplay(seconds, "Detik")
             }
-            
-            Spacer(modifier = Modifier.height(16.dp))
-            
-            Button(
-                onClick = onEndEarly,
-                modifier = Modifier.fillMaxWidth(),
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = PrimaryColor
-                ),
-                shape = RoundedCornerShape(8.dp)
-            ) {
-                Text("Selesaikan Sesi Lebih Awal", fontSize = 14.sp, color = Color.White)
-            }
         }
     }
 }
@@ -405,7 +353,7 @@ fun TimeDisplay(value: Int, label: String) {
 @Composable
 fun ParticipantCard(
     participant: ParticipantRequest,
-    participants: SnapshotStateList<ParticipantRequest>,
+    participants: List<ParticipantRequest>,
     onAccept: () -> Unit,
     onReject: () -> Unit
 ) {
@@ -559,23 +507,3 @@ fun ParticipantCard(
     }
 }
 
-// Data classes
-data class OrderItem(
-    val name: String,
-    val quantity: Int
-)
-
-data class ParticipantRequest(
-    val id: Int,
-    val name: String,
-    val circleName: String,
-    val orderItems: List<OrderItem>,
-    val notes: String,
-    val amount: String,
-    val status: RequestStatus,
-    val avatarRes: Int
-)
-
-enum class RequestStatus {
-    PENDING, ACCEPTED, REJECTED
-}

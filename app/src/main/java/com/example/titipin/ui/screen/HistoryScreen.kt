@@ -164,7 +164,7 @@ fun HistoryScreen(
                                     painter = painterResource(id = iconRes),
                                     contentDescription = null,
                                     modifier = Modifier.size(18.dp),
-                                    tint = if (selectedCategory == category) Color.White else Color.Unspecified
+                                    tint = Color.Unspecified
                                 )
                             }
                         } else null,

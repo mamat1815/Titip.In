@@ -1,164 +1,175 @@
 package com.example.titipin.ui.screen
 
-import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.*
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Remove
+import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.Person
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.example.titipin.R
+import androidx.compose.ui.window.Dialog
 import com.example.titipin.ui.theme.*
-import kotlinx.coroutines.delay
+import com.example.titipin.data.model.AssignableItem
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ItemAssignmentScreen(
     onBackClick: () -> Unit = {},
     onNavigateToPayment: () -> Unit = {}
 ) {
-    var assignmentItems by remember {
-        mutableStateOf(
-            listOf(
-                AssignmentItem("Indomie Goreng", 2, "Budi Santoso", "Rasa rendang", true, R.drawable.ic_profile1),
-                AssignmentItem("Susu Ultra Milk Cokelat 1L", 1, null, "", false, null),
-                AssignmentItem("Teh Botol Kotak", 3, "Citra Lestari", "", true, R.drawable.ic_profile2),
-                AssignmentItem("Air Mineral", 2, null, "", false, null)
+    // Dummy Data
+    val users = listOf("Azhartama", "Uqi", "Marsha", "Yuman")
+    
+    // Items to assign
+    val items = remember { mutableStateListOf(
+        AssignableItem("Cheezy Freezy M", "25000", 1, 0, false),
+        AssignableItem("Red Bull M", "25000", 1, 0, false),
+        AssignableItem("Lemon Tea", "11000", 1, 0, false)
+    ) }
+
+    var showAssignDialog by remember { mutableStateOf<AssignableItem?>(null) }
+
+    Scaffold(
+        containerColor = BgLight,
+        topBar = {
+            TopAppBar(
+                title = { Text("Item Tagihan & Alokasi", fontWeight = FontWeight.Bold) },
+                navigationIcon = {
+                    IconButton(onClick = onBackClick) {
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back")
+                    }
+                },
+                colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.White)
             )
-        )
-    }
-    
-    val assignedCount = assignmentItems.count { it.isAssigned }
-    val totalCount = assignmentItems.size
-    val progress = assignedCount.toFloat() / totalCount.toFloat()
-    
-    // Auto-navigate when all assigned
-    LaunchedEffect(assignedCount) {
-        if (assignedCount == totalCount) {
-            delay(800)
-            onNavigateToPayment()
+        },
+        bottomBar = {
+            Button(
+                onClick = onNavigateToPayment,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(16.dp)
+                    .height(56.dp),
+                shape = RoundedCornerShape(12.dp),
+                colors = ButtonDefaults.buttonColors(containerColor = PrimaryColor)
+            ) {
+                Text(
+                    text = "Lanjut ke Pembayaran", 
+                    fontSize = 16.sp, 
+                    fontWeight = FontWeight.Bold
+                )
+            }
+        }
+    ) { paddingValues ->
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(paddingValues)
+                .verticalScroll(rememberScrollState())
+                .padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(16.dp)
+        ) {
+            items.forEach { item ->
+                AssignmentCard(item = item, onAssignClick = { showAssignDialog = item })
+            }
+        }
+
+        // Dialog for Assignment
+        showAssignDialog?.let { item ->
+            AssignmentDialog(
+                item = item,
+                users = users,
+                onDismiss = { showAssignDialog = null },
+                onDone = { assignments ->
+                    // Update item assignments (Dummy logic: just update assigned count)
+                    item.assignedCount = assignments.values.sum()
+                    item.isAssigned = item.assignedCount == item.totalUnits
+                    showAssignDialog = null
+                }
+            )
         }
     }
-    
-    Box(modifier = Modifier.fillMaxSize()) {
-        Scaffold(
-            containerColor = Color(0xFFF5F5F5),
-            topBar = {
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .background(Color.White)
-                        .statusBarsPadding()
-                        .height(56.dp)
-                        .padding(horizontal = 16.dp)
-                ) {
-                    IconButton(
-                        onClick = onBackClick,
-                        modifier = Modifier.align(Alignment.CenterStart)
-                    ) {
-                        Icon(Icons.Default.ArrowBack, contentDescription = "Back", tint = TextPrimary)
-                    }
-                    Text(
-                        text = "Assign Barang Belanjaan",
-                        fontSize = 18.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = TextPrimary,
-                        modifier = Modifier.align(Alignment.Center)
-                    )
-                }
+}
+
+@Composable
+fun AssignmentCard(item: com.example.titipin.data.model.AssignableItem, onAssignClick: () -> Unit) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(containerColor = Color.White),
+        shape = RoundedCornerShape(12.dp),
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+    ) {
+        Column(modifier = Modifier.padding(16.dp)) {
+            // Header
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Icon(Icons.Default.Edit, null, tint = TextSecondary, modifier = Modifier.size(16.dp))
+                Spacer(modifier = Modifier.width(8.dp))
+                Text(item.name, fontWeight = FontWeight.Bold, fontSize = 16.sp)
             }
-        ) { paddingValues ->
-            LazyColumn(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(paddingValues),
-                verticalArrangement = Arrangement.spacedBy(12.dp)
-            ) {
-                item {
-                    Spacer(modifier = Modifier.height(4.dp))
-                }
-                
-                // Progress Card
-                item {
-                    Card(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(horizontal = 16.dp),
-                        colors = CardDefaults.cardColors(containerColor = Color.White),
-                        shape = RoundedCornerShape(12.dp),
-                        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
-                    ) {
-                        Column(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(16.dp)
-                        ) {
-                            Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.SpaceBetween,
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                Text(
-                                    text = "Progress Assign",
-                                    fontSize = 16.sp,
-                                    fontWeight = FontWeight.Bold,
-                                    color = TextPrimary
-                                )
-                                Text(
-                                    text = "$assignedCount/$totalCount",
-                                    fontSize = 16.sp,
-                                    fontWeight = FontWeight.Bold,
-                                    color = if (assignedCount == totalCount) Color(0xFF4CAF50) else PrimaryColor
-                                )
-                            }
-                            
-                            Spacer(modifier = Modifier.height(12.dp))
-                            
-                            LinearProgressIndicator(
-                                progress = progress,
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .height(10.dp)
-                                    .clip(RoundedCornerShape(5.dp)),
-                                color = if (assignedCount == totalCount) Color(0xFF4CAF50) else PrimaryColor,
-                                trackColor = Color(0xFFE0E0E0)
-                            )
-                        }
-                    }
-                }
-                
-                // Assignment Items
-                items(assignmentItems) { item ->
-                    AssignmentItemCard(
-                        item = item,
-                        onAssignClick = {
-                            // Toggle assignment for demo
-                            assignmentItems = assignmentItems.map {
-                                if (it.itemName == item.itemName && !it.isAssigned) {
-                                    it.copy(
-                                        isAssigned = true,
-                                        assignedTo = "Siti",
-                                        avatarRes = R.drawable.ic_profile2
-                                    )
-                                } else it
-                            }
-                        }
+            
+            Spacer(modifier = Modifier.height(12.dp))
+            
+            // Flex Row for inputs
+            Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
+                // Price input
+                OutlinedTextField(
+                    value = item.price,
+                    onValueChange = {},
+                    label = { Text("per unit") },
+                    prefix = { Text("Rp ") },
+                    modifier = Modifier.weight(1f),
+                    readOnly = true, // Dummy
+                    colors = OutlinedTextFieldDefaults.colors(
+                        unfocusedContainerColor = Color(0xFFF9F9F9),
+                        focusedContainerColor = Color(0xFFF9F9F9)
                     )
-                }
+                )
                 
-                item {
-                    Spacer(modifier = Modifier.height(16.dp))
+                // Qty input
+                OutlinedTextField(
+                    value = item.totalUnits.toString(),
+                    onValueChange = {},
+                    label = { Text("total units") },
+                    prefix = { Text("# ") },
+                    modifier = Modifier.weight(0.7f),
+                    readOnly = true, // Dummy
+                    colors = OutlinedTextFieldDefaults.colors(
+                        unfocusedContainerColor = Color(0xFFF9F9F9),
+                        focusedContainerColor = Color(0xFFF9F9F9)
+                    )
+                )
+            }
+            
+            Spacer(modifier = Modifier.height(12.dp))
+            
+            // Assign Button / Status
+            Button(
+                onClick = onAssignClick,
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = if (item.isAssigned) Color(0xFFE8F5E9) else Color(0xFFEEEEEE),
+                    contentColor = if (item.isAssigned) Color(0xFF2E7D32) else TextSecondary
+                ),
+                shape = RoundedCornerShape(8.dp),
+                modifier = Modifier.fillMaxWidth(),
+                elevation = null
+            ) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Icon(Icons.Default.Person, null, modifier = Modifier.size(18.dp))
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(
+                         if (item.isAssigned) "Assigned: ${item.assignedCount}/${item.totalUnits} units"
+                         else "Assign items"
+                    )
                 }
             }
         }
@@ -166,129 +177,78 @@ fun ItemAssignmentScreen(
 }
 
 @Composable
-fun AssignmentItemCard(
-    item: AssignmentItem,
-    onAssignClick: () -> Unit
+fun AssignmentDialog(
+    item: com.example.titipin.data.model.AssignableItem,
+    users: List<String>,
+    onDismiss: () -> Unit,
+    onDone: (Map<String, Int>) -> Unit
 ) {
-    Card(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 16.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = if (item.isAssigned) Color(0xFFE8F5E9) else Color.White
-        ),
-        shape = RoundedCornerShape(12.dp),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
-    ) {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(16.dp)
+    val assignments = remember { mutableStateMapOf<String, Int>().apply { users.forEach { put(it, 0) } } }
+
+    Dialog(onDismissRequest = onDismiss) {
+        Card(
+            shape = RoundedCornerShape(16.dp),
+            colors = CardDefaults.cardColors(containerColor = Color.White)
         ) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
+            Column(modifier = Modifier.padding(16.dp)) {
                 Text(
-                    text = item.itemName,
-                    fontSize = 15.sp,
-                    fontWeight = FontWeight.Medium,
-                    color = TextPrimary,
-                    modifier = Modifier.weight(1f)
+                    text = "Assign \"${item.name}\"",
+                    fontSize = 18.sp,
+                    fontWeight = FontWeight.Bold
                 )
                 Text(
-                    text = "${item.quantity}x",
+                    text = "Total units: ${item.totalUnits}",
                     fontSize = 14.sp,
-                    fontWeight = FontWeight.Medium,
-                    color = TextSecondary
+                    color = TextSecondary,
+                    modifier = Modifier.padding(bottom = 16.dp)
                 )
-            }
-            
-            Spacer(modifier = Modifier.height(12.dp))
-            
-            if (item.isAssigned && item.assignedTo != null) {
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    item.avatarRes?.let {
-                        Image(
-                            painter = painterResource(id = it),
-                            contentDescription = null,
-                            modifier = Modifier
-                                .size(32.dp)
-                                .clip(CircleShape),
-                            contentScale = ContentScale.Crop
-                        )
-                    }
-                    
-                    Column {
-                        Text(
-                            text = item.assignedTo,
-                            fontSize = 14.sp,
-                            fontWeight = FontWeight.Medium,
-                            color = TextPrimary
-                        )
-                        if (item.notes.isNotEmpty()) {
+
+                // User List
+                users.forEach { user ->
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(vertical = 8.dp),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(user, fontWeight = FontWeight.Medium)
+                        
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            IconButton(onClick = { 
+                                val current = assignments[user] ?: 0
+                                if (current > 0) assignments[user] = current - 1 
+                            }) {
+                                Icon(Icons.Default.Remove, null, tint = PrimaryColor)
+                            }
+                            
                             Text(
-                                text = "Catatan: ${item.notes}",
-                                fontSize = 12.sp,
-                                color = TextSecondary,
-                                fontStyle = androidx.compose.ui.text.font.FontStyle.Italic
+                                text = (assignments[user] ?: 0).toString(),
+                                modifier = Modifier.width(24.dp),
+                                textAlign = androidx.compose.ui.text.style.TextAlign.Center
                             )
+                            
+                            IconButton(onClick = { 
+                                val current = assignments[user] ?: 0
+                                assignments[user] = current + 1 
+                            }) {
+                                Icon(Icons.Default.Add, null, tint = PrimaryColor)
+                            }
                         }
                     }
                 }
-                
-                Spacer(modifier = Modifier.height(12.dp))
+
+                Spacer(modifier = Modifier.height(16.dp))
                 
                 Button(
-                    onClick = { },
+                    onClick = { onDone(assignments) },
                     modifier = Modifier.fillMaxWidth(),
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = Color(0xFF4CAF50)
-                    ),
-                    shape = RoundedCornerShape(8.dp),
-                    enabled = false
+                    colors = ButtonDefaults.buttonColors(containerColor = PrimaryColor)
                 ) {
-                    Icon(Icons.Default.CheckCircle, contentDescription = null, modifier = Modifier.size(  18.dp))
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text("Assigned", fontSize = 14.sp)
-                }
-            } else {
-                Text(
-                    text = "Belum di-assign",
-                    fontSize = 13.sp,
-                    color = TextSecondary
-                )
-                
-                Spacer(modifier = Modifier.height(12.dp))
-                
-                OutlinedButton(
-                    onClick = onAssignClick,
-                    modifier = Modifier.fillMaxWidth(),
-                    colors = ButtonDefaults.outlinedButtonColors(
-                        contentColor = PrimaryColor
-                    ),
-                    border = BorderStroke(1.dp, PrimaryColor),
-                    shape = RoundedCornerShape(8.dp)
-                ) {
-                    Icon(Icons.Default.Add, contentDescription = null, modifier = Modifier.size(18.dp))
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text("Assign Penitip", fontSize = 14.sp)
+                    Text("Done")
                 }
             }
         }
     }
 }
 
-// Data class
-data class AssignmentItem(
-    val itemName: String,
-    val quantity: Int,
-    val assignedTo: String?,
-    val notes: String,
-    val isAssigned: Boolean,
-    val avatarRes: Int?
-)
