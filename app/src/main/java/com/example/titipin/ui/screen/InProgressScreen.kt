@@ -46,7 +46,11 @@ fun InProgressScreen(
                 },
                 actions = {
                     IconButton(onClick = onChatClick) {
-                        Icon(Icons.Default.Chat, "Chat", tint = PrimaryColor)
+                        Image(
+                            painter = painterResource(id = R.drawable.chat),
+                            contentDescription = "Chat",
+                            modifier = Modifier.size(28.dp)
+                        )
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.White)
@@ -72,7 +76,11 @@ fun InProgressScreen(
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
-                    Icon(Icons.Default.Timer, null, tint = Color(0xFFF57C00))
+                    Image(
+                        painter = painterResource(id = R.drawable.timer),
+                        contentDescription = null,
+                        modifier = Modifier.size(24.dp)
+                    )
                     Column {
                         Text("Waktu Belanja", fontSize = 12.sp, color = TextSecondary)
                         Text(
@@ -123,13 +131,13 @@ fun InProgressScreen(
 
             // Your Order
             Text("Pesanan Anda", fontSize = 18.sp, fontWeight = FontWeight.Bold)
-            OrderItemCard("Lemon Tea", 1, "Yang dingin ya", R.drawable.ic_makanan)
+            OrderItemCard("Lemon Tea", 1, "Yang dingin ya", R.drawable.ic_profile1)
 
             // Other Orders
             Text("Pesanan Lainnya", fontSize = 18.sp, fontWeight = FontWeight.Bold)
-            OrderItemCard("Cheezy Freezy M", 1, "", R.drawable.ic_makanan, "Azhartama")
-            OrderItemCard("Roti Tawar", 2, "Jangan yang expired", R.drawable.ic_belanja, "Uqi")
-            OrderItemCard("Red Bull M", 1, "Sugar free", R.drawable.ic_makanan, "Marsha")
+            OrderItemCard("Cheezy Freezy M", 1, "", R.drawable.ic_profile2, "Azhartama")
+            OrderItemCard("Roti Tawar", 2, "Jangan yang expired", R.drawable.ic_profile1, "Uqi")
+            OrderItemCard("Red Bull M", 1, "Sugar free", R.drawable.ic_profile2, "Marsha")
 
             // Dummy Auto-navigate button for testing
             if (isScanning) {

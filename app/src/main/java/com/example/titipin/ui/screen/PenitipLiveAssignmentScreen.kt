@@ -12,10 +12,14 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.titipin.R
 import com.example.titipin.ui.theme.*
 import com.example.titipin.ui.viewmodel.PenitipLiveAssignmentViewModel
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -28,6 +32,9 @@ fun PenitipLiveAssignmentScreen(
     onBackClick: () -> Unit = {},
     onChatClick: () -> Unit = {},
     onAllAssigned: () -> Unit = {},
+    onNavigateToHome: () -> Unit = {},
+    onNavigateToTitipanku: () -> Unit = {},
+    onNavigateToProfile: () -> Unit = {},
     viewModel: PenitipLiveAssignmentViewModel = viewModel()
 ) {
     val users = listOf("Azhartama", "Uqi", "Marsha", "Yuman")
@@ -49,25 +56,41 @@ fun PenitipLiveAssignmentScreen(
                 },
                 actions = {
                     IconButton(onClick = onChatClick) {
-                        Icon(Icons.Default.Chat, "Chat", tint = PrimaryColor)
+                        Image(
+                            painter = painterResource(id = R.drawable.chat),
+                            contentDescription = "Chat",
+                            modifier = Modifier.size(28.dp)
+                        )
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.White)
             )
         },
         bottomBar = {
-            if (allAssigned) {
-                Button(
-                    onClick = onAllAssigned,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(16.dp)
-                        .height(56.dp),
-                    shape = RoundedCornerShape(12.dp),
-                    colors = ButtonDefaults.buttonColors(containerColor = PrimaryColor)
-                ) {
-                    Text("Semua Item Terbagi - Lanjut", fontSize = 16.sp, fontWeight = FontWeight.Bold)
+            Column {
+                if (allAssigned) {
+                    Button(
+                        onClick = onAllAssigned,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(16.dp)
+                            .height(56.dp),
+                        shape = RoundedCornerShape(12.dp),
+                        colors = ButtonDefaults.buttonColors(containerColor = PrimaryColor)
+                    ) {
+                        Text("Selesai Pembagian", fontSize = 16.sp, fontWeight = FontWeight.Bold)
+                    }
                 }
+                BottomNavBar(
+                    selectedTab = -1,
+                    onTabSelected = { index ->
+                        when (index) {
+                            0 -> onNavigateToHome()
+                            1 -> onNavigateToTitipanku()
+                            2 -> onNavigateToProfile()
+                        }
+                    }
+                )
             }
         }
     ) { paddingValues ->
@@ -94,15 +117,15 @@ fun PenitipLiveAssignmentScreen(
                     Box(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .height(150.dp)
-                            .background(Color(0xFFF5F5F5), RoundedCornerShape(8.dp)),
+                            .height(200.dp)
+                            .clip(RoundedCornerShape(8.dp)),
                         contentAlignment = Alignment.Center
                     ) {
-                        Icon(
-                            Icons.Default.Image,
-                            null,
-                            modifier = Modifier.size(64.dp),
-                            tint = Color.Gray
+                        Image(
+                            painter = painterResource(R.drawable.struk),
+                            contentDescription = "Foto Struk",
+                            modifier = Modifier.fillMaxSize(),
+                            contentScale = ContentScale.Crop
                         )
                     }
                     Text(

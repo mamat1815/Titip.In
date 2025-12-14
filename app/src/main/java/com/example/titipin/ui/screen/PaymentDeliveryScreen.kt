@@ -188,10 +188,9 @@ fun PaymentDeliveryScreen(
                                 verticalAlignment = Alignment.CenterVertically,
                                 horizontalArrangement = Arrangement.spacedBy(8.dp)
                             ) {
-                                Icon(
-                                    Icons.Default.Timer,
+                                Image(
+                                    painter = painterResource(id = R.drawable.timer),
                                     contentDescription = null,
-                                    tint = Color.White,
                                     modifier = Modifier.size(24.dp)
                                 )
                                 Text(
@@ -246,15 +245,12 @@ fun PaymentDeliveryScreen(
                             // Small Chat Button
                             IconButton(
                                 onClick = onChatClick,
-                                modifier = Modifier
-                                    .size(36.dp)
-                                    .background(PrimaryColor, CircleShape)
+                                modifier = Modifier.size(36.dp)
                             ) {
-                                Icon(
-                                    Icons.Default.Chat,
+                                Image(
+                                    painter = painterResource(id = R.drawable.chat),
                                     contentDescription = "Chat",
-                                    tint = Color.White,
-                                    modifier = Modifier.size(18.dp)
+                                    modifier = Modifier.size(28.dp)
                                 )
                             }
                         }
@@ -318,19 +314,19 @@ fun PaymentDeliveryScreen(
                         
                         Spacer(modifier = Modifier.height(16.dp))
                         
-                        // QR Code Placeholder
+                        // QR Code Image
                         Box(
                             modifier = Modifier
                                 .size(200.dp)
-                                .background(Color(0xFFF5F5F5), RoundedCornerShape(12.dp))
-                                .border(2.dp, Color(0xFFE0E0E0), RoundedCornerShape(12.dp)),
+                                .background(Color.White, RoundedCornerShape(12.dp))
+                                .border(2.dp, Color(0xFFE0E0E0), RoundedCornerShape(12.dp))
+                                .padding(12.dp),
                             contentAlignment = Alignment.Center
                         ) {
-                            Icon(
-                                Icons.Default.QrCode2,
+                            Image(
+                                painter = painterResource(id = R.drawable.qr_code),
                                 contentDescription = "QR Code",
-                                modifier = Modifier.size(150.dp),
-                                tint = TextSecondary
+                                modifier = Modifier.fillMaxSize()
                             )
                         }
                         

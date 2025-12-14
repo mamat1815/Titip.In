@@ -14,9 +14,11 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.titipin.R
 import com.example.titipin.ui.theme.*
 
 @Composable
@@ -219,15 +221,12 @@ fun ShoppingHeaderCard(
                 
                 IconButton(
                     onClick = onChatClick,
-                    modifier = Modifier
-                        .size(40.dp)
-                        .background(PrimaryColor, CircleShape)
+                    modifier = Modifier.size(40.dp)
                 ) {
-                    Icon(
-                        Icons.Default.Chat,
+                    Image(
+                        painter = painterResource(id = R.drawable.chat),
                         contentDescription = "Chat",
-                        tint = Color.White,
-                        modifier = Modifier.size(20.dp)
+                        modifier = Modifier.size(28.dp)
                     )
                 }
             }

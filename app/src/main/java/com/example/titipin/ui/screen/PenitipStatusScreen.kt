@@ -20,7 +20,10 @@ import com.example.titipin.ui.theme.*
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun PenitipStatusScreen(
-    onBackClick: () -> Unit = {}
+    onBackClick: () -> Unit = {},
+    onNavigateToHome: () -> Unit = {},
+    onNavigateToTitipanku: () -> Unit = {},
+    onNavigateToProfile: () -> Unit = {}
 ) {
     // Dummy State: Tracking vs Bill
     // Let's assume bill is ready for this demo explanation flow
@@ -41,18 +44,30 @@ fun PenitipStatusScreen(
             )
         },
         bottomBar = {
-            if (isBillReady) {
-                Button(
-                    onClick = { /* Handle Payment Confirmation */ },
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(16.dp)
-                        .height(56.dp),
-                    shape = RoundedCornerShape(12.dp),
-                    colors = ButtonDefaults.buttonColors(containerColor = PrimaryColor)
-                ) {
-                    Text("Konfirmasi Pembayaran", fontSize = 16.sp, fontWeight = FontWeight.Bold)
+            Column {
+                if (isBillReady) {
+                    Button(
+                        onClick = { /* Handle Payment Confirmation */ },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(16.dp)
+                            .height(56.dp),
+                        shape = RoundedCornerShape(12.dp),
+                        colors = ButtonDefaults.buttonColors(containerColor = PrimaryColor)
+                    ) {
+                        Text("Konfirmasi Pembayaran", fontSize = 16.sp, fontWeight = FontWeight.Bold)
+                    }
                 }
+                BottomNavBar(
+                    selectedTab = -1,
+                    onTabSelected = { index ->
+                        when (index) {
+                            0 -> onNavigateToHome()
+                            1 -> onNavigateToTitipanku()
+                            2 -> onNavigateToProfile()
+                        }
+                    }
+                )
             }
         }
     ) { paddingValues ->
@@ -112,29 +127,25 @@ fun PenitipStatusScreen(
                 // Payment Method
                 Text("Pembayaran", fontWeight = FontWeight.Bold, fontSize = 16.sp)
                 
-                // QR Code Placeholder
+                // QR Code
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(200.dp)
                         .background(Color.White, RoundedCornerShape(12.dp))
-                        .border(1.dp, Color.Gray.copy(alpha=0.2f), RoundedCornerShape(12.dp)),
+                        .border(1.dp, Color.Gray.copy(alpha=0.2f), RoundedCornerShape(12.dp))
+                        .padding(16.dp),
                     contentAlignment = Alignment.Center
                 ) {
                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        // Using ic_belanja as placeholder for QR or replace with generate_image if allowed/neutral
-                        Icon(painterResource(R.drawable.ic_belanja), null, modifier = Modifier.size(64.dp), tint = Color.Unspecified)
+                        Image(
+                            painter = painterResource(R.drawable.qr_code),
+                            contentDescription = "QR Code",
+                            modifier = Modifier.size(150.dp)
+                        )
                         Spacer(modifier = Modifier.height(8.dp))
                         Text("Scan QRIS untuk Bayar", color = TextSecondary)
                     }
-                }
-                
-                OutlinedButton(
-                    onClick = { /* Chat Pembeli */ },
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(12.dp)
-                ) {
-                    Text("Chat Pembeli (Bayar Cash)")
                 }
             }
         }

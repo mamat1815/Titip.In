@@ -16,9 +16,9 @@ class TitipRepository {
     private fun getDummyTitipSessions() = listOf(
         TitipSession(
             id = 1,
-            title = "Titip Jajan di Kantin",
+            title = "Mcd Jakal",
             recipientName = "Fulan",
-            location = "Indomaret Jakal",
+            location = "Mcdonald's Jakal",
             category = "Makanan/Minuman",
             iconRes = R.drawable.ic_makanan,
             status = TitipStatus.MENUNGGU_ACCEPT,

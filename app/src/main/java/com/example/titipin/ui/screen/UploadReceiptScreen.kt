@@ -123,15 +123,12 @@ fun UploadReceiptScreen(
                                 
                                 IconButton(
                                     onClick = onChatClick,
-                                    modifier = Modifier
-                                        .size(40.dp)
-                                        .background(PrimaryColor, CircleShape)
+                                    modifier = Modifier.size(40.dp)
                                 ) {
-                                    Icon(
-                                        Icons.Default.Chat,
+                                    Image(
+                                        painter = painterResource(id = R.drawable.chat),
                                         contentDescription = "Chat",
-                                        tint = Color.White,
-                                        modifier = Modifier.size(20.dp)
+                                        modifier = Modifier.size(28.dp)
                                     )
                                 }
                             }
@@ -366,18 +363,18 @@ fun ReceiptPreviewCard(
                 .padding(20.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            // Receipt Icon
+            // Receipt Image
             Box(
                 modifier = Modifier
-                    .size(80.dp)
-                    .background(Color(0xFFF5F5F5), RoundedCornerShape(12.dp)),
+                    .size(120.dp)
+                    .clip(RoundedCornerShape(12.dp)),
                 contentAlignment = Alignment.Center
             ) {
-                Icon(
-                    Icons.Default.Receipt,
-                    contentDescription = null,
-                    tint = PrimaryColor,
-                    modifier = Modifier.size(40.dp)
+                Image(
+                    painter = painterResource(R.drawable.struk),
+                    contentDescription = "Receipt",
+                    modifier = Modifier.fillMaxSize(),
+                    contentScale = ContentScale.Crop
                 )
             }
             

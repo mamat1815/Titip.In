@@ -216,6 +216,8 @@ fun TitipSessionCard(session: TitipSession, onClick: () -> Unit) {
                         overflow = TextOverflow.Ellipsis,
                         modifier = Modifier.weight(1f)
                     )
+                    // Status Badge di kanan atas
+                    StatusBadge(session.status.displayName, session.status.color)
                 }
                 
                 // Recipient
@@ -256,22 +258,13 @@ fun TitipSessionCard(session: TitipSession, onClick: () -> Unit) {
                     )
                 }
                 
-                // Amount & Status
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Text(
-                        text = if (session.status == TitipStatus.MENUNGGU_ACCEPT) "${session.requestQty} Item (${session.requestItem})" else session.amount,
-                        fontSize = 15.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = PrimaryColor
-                    )
-                    
-                    // Status Badge
-                    StatusBadge(session.status.displayName, session.status.color)
-                }
+                // Amount
+                Text(
+                    text = if (session.status == TitipStatus.MENUNGGU_ACCEPT) "-" else session.amount,
+                    fontSize = 15.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = PrimaryColor
+                )
             }
         }
     }
@@ -369,10 +362,9 @@ fun DititipiSessionCard(session: DititipiSession) {
                         horizontalArrangement = Arrangement.spacedBy(4.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Icon(
-                            Icons.Default.Timer,
+                        Image(
+                            painter = painterResource(id = R.drawable.timer),
                             contentDescription = null,
-                            tint = if (session.status == DititipiStatus.SELESAI) TextSecondary else PrimaryColor,
                             modifier = Modifier.size(14.dp)
                         )
                         Text(

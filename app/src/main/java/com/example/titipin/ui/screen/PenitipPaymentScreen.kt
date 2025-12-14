@@ -24,9 +24,14 @@ import com.example.titipin.ui.theme.*
 @Composable
 fun PenitipPaymentScreen(
     onBackClick: () -> Unit = {},
-    onChatClick: () -> Unit = {}
+    onChatClick: () -> Unit = {},
+    onNavigateToHome: () -> Unit = {},
+    onNavigateToTitipanku: () -> Unit = {},
+    onNavigateToProfile: () -> Unit = {}
 ) {
     var deliveryTime by remember { mutableStateOf("00:15:30") }
+    var showConfirmDialog by remember { mutableStateOf(false) }
+    var isPaid by remember { mutableStateOf(false) }
 
     Scaffold(
         containerColor = BgLight,
@@ -40,30 +45,58 @@ fun PenitipPaymentScreen(
                 },
                 actions = {
                     IconButton(onClick = onChatClick) {
-                        Icon(Icons.Default.Chat, "Chat", tint = PrimaryColor)
+                        Image(
+                            painter = painterResource(id = R.drawable.chat),
+                            contentDescription = "Chat",
+                            modifier = Modifier.size(28.dp)
+                        )
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.White)
             )
         },
         bottomBar = {
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .background(Color.White)
-                    .padding(16.dp),
-                verticalArrangement = Arrangement.spacedBy(12.dp)
-            ) {
-                Button(
-                    onClick = { /* Konfirmasi */ },
+            Column {
+                // Payment Button
+                Column(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .height(56.dp),
-                    shape = RoundedCornerShape(12.dp),
-                    colors = ButtonDefaults.buttonColors(containerColor = PrimaryColor)
+                        .background(Color.White)
+                        .padding(16.dp),
+                    verticalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
-                    Text("Konfirmasi Pembayaran", fontSize = 16.sp, fontWeight = FontWeight.Bold)
+                    Button(
+                        onClick = { 
+                            if (!isPaid) {
+                                showConfirmDialog = true
+                            }
+                        },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(56.dp),
+                        shape = RoundedCornerShape(12.dp),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = if (isPaid) Color(0xFF4CAF50) else PrimaryColor
+                        )
+                    ) {
+                        Text(
+                            if (isPaid) "Pesanan Diterima" else "Konfirmasi Pembayaran",
+                            fontSize = 16.sp,
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
                 }
+                // Bottom Nav
+                BottomNavBar(
+                    selectedTab = -1,
+                    onTabSelected = { index ->
+                        when (index) {
+                            0 -> onNavigateToHome()
+                            1 -> onNavigateToTitipanku()
+                            2 -> onNavigateToProfile()
+                        }
+                    }
+                )
             }
         }
     ) { paddingValues ->
@@ -94,7 +127,11 @@ fun PenitipPaymentScreen(
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
-                        Icon(Icons.Default.Timer, null, tint = Color(0xFFF57C00), modifier = Modifier.size(18.dp))
+                        Image(
+                            painter = painterResource(id = R.drawable.timer),
+                            contentDescription = null,
+                            modifier = Modifier.size(18.dp)
+                        )
                         Text("Estimasi tiba: $deliveryTime", fontSize = 14.sp, color = TextSecondary)
                     }
                     Spacer(modifier = Modifier.height(8.dp))
@@ -133,31 +170,53 @@ fun PenitipPaymentScreen(
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(200.dp)
+                    .height(240.dp)
                     .background(Color.White, RoundedCornerShape(12.dp))
-                    .border(1.dp, Color.Gray.copy(alpha = 0.2f), RoundedCornerShape(12.dp)),
+                    .border(1.dp, Color.Gray.copy(alpha = 0.2f), RoundedCornerShape(12.dp))
+                    .padding(20.dp),
                 contentAlignment = Alignment.Center
             ) {
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    Icon(
-                        painterResource(R.drawable.ic_belanja),
-                        null,
-                        modifier = Modifier.size(64.dp),
-                        tint = Color.Unspecified
+                    Image(
+                        painter = painterResource(R.drawable.qr_code),
+                        contentDescription = "QR Code",
+                        modifier = Modifier.size(170.dp)
                     )
                     Spacer(modifier = Modifier.height(8.dp))
-                    Text("Scan QRIS untuk Bayar", color = TextSecondary)
+                    Text("Scan QRIS untuk Bayar", color = TextSecondary, fontSize = 13.sp)
                 }
             }
 
-            OutlinedButton(
-                onClick = onChatClick,
-                modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(12.dp)
-            ) {
-                Text("Chat Pembeli (Bayar Cash)")
-            }
         }
+    }
+    
+    // Confirmation Dialog
+    if (showConfirmDialog) {
+        AlertDialog(
+            onDismissRequest = { showConfirmDialog = false },
+            title = { Text("Konfirmasi Pembayaran") },
+            text = { Text("Apakah pembeli sudah membayar dan menyerahkan barang pesanan?") },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        isPaid = true
+                        showConfirmDialog = false
+                    },
+                    colors = ButtonDefaults.buttonColors(containerColor = PrimaryColor)
+                ) {
+                    Text("Ya, Sudah")
+                }
+            },
+            dismissButton = {
+                OutlinedButton(
+                    onClick = { showConfirmDialog = false },
+                    colors = ButtonDefaults.outlinedButtonColors(contentColor = PrimaryColor)
+                ) {
+                    Text("Belum")
+                }
+            },
+            containerColor = Color.White
+        )
     }
 }
 

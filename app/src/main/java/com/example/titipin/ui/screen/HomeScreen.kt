@@ -4,6 +4,7 @@ import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.animation.core.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
@@ -11,12 +12,17 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Path
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.titipin.R
@@ -28,7 +34,10 @@ fun HomeScreen(
     onNavigateToTitipanku: () -> Unit = {},
     onNavigateToProfile: () -> Unit = {},
     onNavigateToHistory: () -> Unit = {},
-    onNavigateToRequest: () -> Unit = {}
+    onNavigateToRequest: () -> Unit = {},
+    onNavigateToNotifications: () -> Unit = {},
+    onNavigateToShopping: () -> Unit = {},
+    onNavigateToInProgress: () -> Unit = {}
 ) {
     // ===== DUMMY DATA - BISA DIUBAH-UBAH DI SINI =====
     
@@ -111,7 +120,10 @@ fun HomeScreen(
                 .verticalScroll(rememberScrollState())
         ) {
             // Header dengan Profile & Notifikasi
-            HeaderSection(profileImageRes = profileImageRes)
+            HeaderSection(
+                profileImageRes = profileImageRes,
+                onNotificationClick = onNavigateToNotifications
+            )
 
             Spacer(modifier = Modifier.height(16.dp))
             
@@ -135,8 +147,31 @@ fun HomeScreen(
                     modifier = Modifier.padding(top = 24.dp, bottom = 12.dp)
                 )
 
-                // Sesi Titipan Saat Ini Card
-                CurrentSessionCard(participantAvatars = participantAvatars)
+                // Sesi Dititipin Saat Ini Card
+                ActiveSessionCard(
+                    title = "Sesi Dititipin Saat Ini",
+                    placeName = "Alfamart Jakal",
+                    timer = "01:30:07",
+                    description = "Aku pakai motor jadi gabisa titip yang berat-berat ya!",
+                    iconRes = R.drawable.ic_belanja,
+                    participantAvatars = participantAvatars,
+                    showAvatars = true,
+                    onClick = onNavigateToShopping
+                )
+
+                Spacer(modifier = Modifier.height(16.dp))
+                
+                // Sesi Titip Saat Ini Card (NEW)
+                ActiveSessionCard(
+                    title = "Sesi Titip Saat Ini",
+                    placeName = "Indomaret Point",
+                    timer = "00:45:20",
+                    description = "Menunggu barang dibelikan oleh Budi...",
+                    iconRes = R.drawable.ic_makanan,
+                    participantAvatars = emptyList(),
+                    showAvatars = false,
+                    onClick = onNavigateToInProgress
+                )
 
                 Spacer(modifier = Modifier.height(16.dp))
 
@@ -193,7 +228,10 @@ data class DummyTransaction(
 )
 
 @Composable
-fun HeaderSection(profileImageRes: Int) {
+fun HeaderSection(
+    profileImageRes: Int,
+    onNotificationClick: () -> Unit
+) {
     // Outer container with background
     Box(
         modifier = Modifier
@@ -256,13 +294,12 @@ fun HeaderSection(profileImageRes: Int) {
                         .size(40.dp)
                         .clip(CircleShape)
                         .background(Color(0xFFF5F5F5))
-                        .clickable { /* Navigate to notifications */ },
+                        .clickable { onNotificationClick() },
                     contentAlignment = Alignment.Center
                 ) {
-                    Icon(
-                        Icons.Default.Notifications,
+                    Image(
+                        painter = painterResource(id = R.drawable.notification),
                         contentDescription = "Notifikasi",
-                        tint = TextPrimary,
                         modifier = Modifier.size(22.dp)
                     )
                 }
@@ -272,7 +309,16 @@ fun HeaderSection(profileImageRes: Int) {
 }
 
 @Composable
-fun CurrentSessionCard(participantAvatars: List<Int>) {
+fun ActiveSessionCard(
+    title: String,
+    placeName: String,
+    timer: String,
+    description: String,
+    iconRes: Int,
+    participantAvatars: List<Int>,
+    showAvatars: Boolean = true,
+    onClick: () -> Unit
+) {
     Card(
         modifier = Modifier.fillMaxWidth(),
         colors = CardDefaults.cardColors(containerColor = CardLight),
@@ -289,7 +335,7 @@ fun CurrentSessionCard(participantAvatars: List<Int>) {
                 verticalAlignment = Alignment.Top
             ) {
                 Text(
-                    text = "Sesi Dititipin Saat Ini",
+                    text = title,
                     fontSize = 16.sp,
                     fontWeight = FontWeight.Bold,
                     color = TextPrimary
@@ -298,14 +344,13 @@ fun CurrentSessionCard(participantAvatars: List<Int>) {
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(4.dp)
                 ) {
-                    Icon(
-                        Icons.Default.Timer,
+                    Image(
+                        painter = painterResource(id = R.drawable.timer),
                         contentDescription = null,
-                        tint = PrimaryColor,
                         modifier = Modifier.size(16.dp)
                     )
                     Text(
-                        text = "01:30:07",
+                        text = timer,
                         fontSize = 12.sp,
                         fontWeight = FontWeight.Bold,
                         color = PrimaryColor
@@ -322,13 +367,13 @@ fun CurrentSessionCard(participantAvatars: List<Int>) {
             ) {
                 // Category Icon
                 Image(
-                    painter = painterResource(id = R.drawable.ic_belanja),
+                    painter = painterResource(id = iconRes),
                     contentDescription = "Category",
                     modifier = Modifier.size(24.dp)
                 )
                 
                 Text(
-                    text = "Alfamart Jakal",
+                    text = placeName,
                     fontSize = 18.sp,
                     fontWeight = FontWeight.Bold,
                     color = TextPrimary,
@@ -342,7 +387,7 @@ fun CurrentSessionCard(participantAvatars: List<Int>) {
 
             // Session Description
             Text(
-                text = "Aku pakai motor jadi gabisa titip yang berat-berat ya!",
+                text = description,
                 fontSize = 14.sp,
                 color = TextSecondary,
                 lineHeight = 20.sp,
@@ -358,40 +403,44 @@ fun CurrentSessionCard(participantAvatars: List<Int>) {
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                // Participant Avatars - dari drawable
-                Row {
-                    participantAvatars.forEachIndexed { index, avatarRes ->
-                        Image(
-                            painter = painterResource(id = avatarRes),
-                            contentDescription = null,
+                // Participant Avatars - only if showAvatars is true
+                if (showAvatars) {
+                    Row {
+                        participantAvatars.forEachIndexed { index, avatarRes ->
+                            Image(
+                                painter = painterResource(id = avatarRes),
+                                contentDescription = null,
+                                modifier = Modifier
+                                    .offset(x = (index * -8).dp)
+                                    .size(32.dp)
+                                    .clip(CircleShape)
+                                    .border(2.dp, Color.White, CircleShape),
+                                contentScale = ContentScale.Crop
+                            )
+                        }
+                        Box(
                             modifier = Modifier
-                                .offset(x = (index * -8).dp)
+                                .offset(x = (participantAvatars.size * -8).dp)
                                 .size(32.dp)
                                 .clip(CircleShape)
+                                .background(Color(0xFFE5E7EB))
                                 .border(2.dp, Color.White, CircleShape),
-                            contentScale = ContentScale.Crop
-                        )
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Text(
+                                text = "+2",
+                                fontSize = 12.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = TextPrimary
+                            )
+                        }
                     }
-                    Box(
-                        modifier = Modifier
-                            .offset(x = (participantAvatars.size * -8).dp)
-                            .size(32.dp)
-                            .clip(CircleShape)
-                            .background(Color(0xFFE5E7EB))
-                            .border(2.dp, Color.White, CircleShape),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Text(
-                            text = "+2",
-                            fontSize = 12.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = TextPrimary
-                        )
-                    }
+                } else {
+                    Spacer(modifier = Modifier.width(1.dp)) // Spacer to keep alignment if needed
                 }
 
                 // Detail Link
-                TextButton(onClick = { /* Navigate to session detail */ }) {
+                TextButton(onClick = onClick) {
                     Text(
                         text = "Lihat Detail",
                         fontSize = 14.sp,
@@ -568,90 +617,76 @@ fun BottomNavBar(
     selectedTab: Int = 0,
     onTabSelected: (Int) -> Unit = {}
 ) {
-    NavigationBar(
-        containerColor = CardLight,
-        modifier = Modifier.height(80.dp),
-        windowInsets = WindowInsets(0, 0, 0, 0) // Remove default insets
+    Surface(
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(70.dp),
+        color = Color.White,
+        shadowElevation = 8.dp
     ) {
-        // Beranda
-        NavigationBarItem(
-            icon = {
-                Icon(
-                    Icons.Default.Home,
-                    contentDescription = null,
-                    modifier = Modifier.size(24.dp)
-                )
-            },
-            label = {
-                Text(
-                    "Beranda",
-                    fontSize = 12.sp,
-                    fontWeight = if (selectedTab == 0) FontWeight.Bold else FontWeight.Medium
-                )
-            },
-            selected = selectedTab == 0,
-            onClick = { onTabSelected(0) },
-            colors = NavigationBarItemDefaults.colors(
-                selectedIconColor = PrimaryColor,
-                selectedTextColor = PrimaryColor,
-                indicatorColor = PrimaryColor.copy(alpha = 0.1f),
-                unselectedIconColor = TextSecondary,
-                unselectedTextColor = TextSecondary
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .fillMaxHeight(),
+            horizontalArrangement = Arrangement.SpaceEvenly,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            // Beranda
+            NavIconWithIndicator(
+                iconRes = R.drawable.home,
+                selected = selectedTab == 0,
+                onClick = { onTabSelected(0) }
             )
-        )
+            
+            // Titipanku
+            NavIconWithIndicator(
+                iconRes = R.drawable.titipanku,
+                selected = selectedTab == 1,
+                onClick = { onTabSelected(1) }
+            )
+            
+            // Profile
+            NavIconWithIndicator(
+                iconRes = R.drawable.profile,
+                selected = selectedTab == 2,
+                onClick = { onTabSelected(2) }
+            )
+        }
+    }
+}
 
-        // Titipanku
-        NavigationBarItem(
-            icon = {
-                Icon(
-                    Icons.Default.List,
-                    contentDescription = null,
-                    modifier = Modifier.size(24.dp)
-                )
-            },
-            label = {
-                Text(
-                    "Titipanku",
-                    fontSize = 12.sp,
-                    fontWeight = if (selectedTab == 1) FontWeight.Bold else FontWeight.Medium
-                )
-            },
-            selected = selectedTab == 1,
-            onClick = { onTabSelected(1) },
-            colors = NavigationBarItemDefaults.colors(
-                selectedIconColor = PrimaryColor,
-                selectedTextColor = PrimaryColor,
-                indicatorColor = PrimaryColor.copy(alpha = 0.1f),
-                unselectedIconColor = TextSecondary,
-                unselectedTextColor = TextSecondary
-            )
+@Composable
+private fun NavIconWithIndicator(
+    iconRes: Int,
+    selected: Boolean,
+    onClick: () -> Unit
+) {
+    Column(
+        modifier = Modifier
+            .width(80.dp)
+            .fillMaxHeight()
+            .clickable(onClick = onClick),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Center
+    ) {
+        Icon(
+            painter = painterResource(id = iconRes),
+            contentDescription = null,
+            modifier = Modifier.size(26.dp),
+            tint = if (selected) PrimaryColor else Color(0xFF9E9E9E)
         )
-
-        // Profile
-        NavigationBarItem(
-            icon = {
-                Icon(
-                    Icons.Default.Person,
-                    contentDescription = null,
-                    modifier = Modifier.size(24.dp)
+        
+        Spacer(modifier = Modifier.height(8.dp))
+        
+        // Indicator line
+        Box(
+            modifier = Modifier
+                .width(40.dp)
+                .height(3.dp)
+                .background(
+                    color = if (selected) PrimaryColor else Color.Transparent,
+                    shape = RoundedCornerShape(2.dp)
                 )
-            },
-            label = {
-                Text(
-                    "Profil",
-                    fontSize = 12.sp,
-                    fontWeight = if (selectedTab == 2) FontWeight.Bold else FontWeight.Medium
-                )
-            },
-            selected = selectedTab == 2,
-            onClick = { onTabSelected(2) },
-            colors = NavigationBarItemDefaults.colors(
-                selectedIconColor = PrimaryColor,
-                selectedTextColor = PrimaryColor,
-                indicatorColor = PrimaryColor.copy(alpha = 0.1f),
-                unselectedIconColor = TextSecondary,
-                unselectedTextColor = TextSecondary
-            )
         )
     }
 }

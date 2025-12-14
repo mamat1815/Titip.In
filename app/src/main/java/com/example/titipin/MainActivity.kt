@@ -122,6 +122,15 @@ class MainActivity : ComponentActivity() {
                             },
                             onNavigateToRequest = {
                                 navController.navigate("request_item")
+                            },
+                            onNavigateToNotifications = {
+                                navController.navigate("notifications")
+                            },
+                            onNavigateToShopping = {
+                                navController.navigate("shopping_list")
+                            },
+                            onNavigateToInProgress = {
+                                navController.navigate("in_progress")
                             }
                         )
                     }
@@ -367,6 +376,18 @@ class MainActivity : ComponentActivity() {
                         HistoryScreen(
                             onBackClick = {
                                 navController.navigateUp()
+                            }
+                        )
+                    }
+                    
+                    // Rute Notifications
+                    composable("notifications") {
+                        NotificationScreen(
+                            onBackClick = {
+                                navController.navigateUp()
+                            },
+                            onTitipClick = {
+                                navController.navigate("request_item")
                             }
                         )
                     }
