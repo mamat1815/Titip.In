@@ -166,7 +166,7 @@ fun HomeScreen(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Text(
-                        "Riwayat Sesi jo",
+                        "Riwayat Sesi",
                         fontWeight = FontWeight.Bold,
                         fontSize = 18.sp,
                         fontFamily = jakartaFamily
