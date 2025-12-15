@@ -17,7 +17,7 @@ import javax.inject.Singleton
 @InstallIn(SingletonComponent::class)
 object ApiModule {
 
-    private const val FIREBASE_FUNCTIONS_BASE_URL = BuildConfig.FIREBASE_API_KEY
+    private val BASE_URL = BuildConfig.FIREBASE_API_KEY
 
     @Provides
     @Singleton
@@ -44,7 +44,7 @@ object ApiModule {
     @Singleton
     fun provideRetrofit(okHttpClient: OkHttpClient): Retrofit {
         return Retrofit.Builder()
-            .baseUrl(FIREBASE_FUNCTIONS_BASE_URL)
+            .baseUrl(BASE_URL)
             .client(okHttpClient)
             .addConverterFactory(GsonConverterFactory.create())
             .build()
@@ -56,3 +56,5 @@ object ApiModule {
         return retrofit.create(FirebaseFunctionsApi::class.java)
     }
 }
+
+
