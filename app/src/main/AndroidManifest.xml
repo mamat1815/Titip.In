@@ -30,33 +30,7 @@
             android:exported="false"
             android:label="@string/title_activity_session"
             android:theme="@style/Theme.TitipIn" />
-        <activity
-            android:name=".ui.circle.CircleDetailActivity"
-            android:exported="false"
-            android:label="@string/title_activity_circle_detail"
-            android:theme="@style/Theme.TitipIn" />
-        <activity
-            android:name=".ui.circle.CircleActivity"
-            android:exported="false"
-            android:label="@string/title_activity_circle"
-            android:theme="@style/Theme.TitipIn" />
-        <activity
-            android:name=".ui.circle.AddCircleActivity"
-            android:exported="false"
-            android:label="@string/title_activity_add_circle"
-            android:theme="@style/Theme.TitipIn" />
-        <activity
-            android:name=".ui.home.auth.login.LoginActivity"
-            android:exported="true"
-            android:label="@string/title_activity_login"
-            android:theme="@style/Theme.TitipIn">
 
-        </activity>
-        <activity
-            android:name=".ui.home.auth.register.RegisterActivity"
-            android:exported="false"
-            android:label="@string/title_activity_register"
-            android:theme="@style/Theme.TitipIn" />
         <activity
             android:name=".ui.payment.PaymentActivity"
             android:exported="false"

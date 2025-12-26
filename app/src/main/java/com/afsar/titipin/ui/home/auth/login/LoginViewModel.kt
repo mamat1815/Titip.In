@@ -28,6 +28,8 @@ class LoginViewModel @Inject constructor(
     var errorMessage by mutableStateOf<String?>(null)
     var isLoginSuccess by mutableStateOf(false)
 
+
+
     private val _startDestination = MutableStateFlow<String?>(null)
     val startDestination = _startDestination.asStateFlow()
 
@@ -93,7 +95,6 @@ class LoginViewModel @Inject constructor(
 
     fun logout() {
         repository.logout()
-
         isLoginSuccess = false
         emailInput = ""
         passwordInput = ""

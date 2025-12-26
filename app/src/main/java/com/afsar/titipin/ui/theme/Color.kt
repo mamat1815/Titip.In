@@ -18,3 +18,10 @@ val TextDarkSecondary = Color(0xFFA9A9A9)
 
 val BorderLight = Color(0xFFE1DAE7)
 val BorderDark = Color(0xFF333333)
+
+
+val OrangePrimary = Color(0xFFF28D35) // Warna Tombol Utama
+val TextPrimary = Color(0xFF1A1A1A)   // Warna Teks Hitam
+val TextSecondary = Color(0xFF9CA3AF) // Warna Teks Abu (Placeholder)
+val InputBg = Color(0xFFF3F4F6)       // Warna Abu untuk Background Input
+val White = Color(0xFFFFFFFF)

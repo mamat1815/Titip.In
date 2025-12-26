@@ -12,6 +12,8 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.afsar.titipin.ui.home.MainAppNav
+import com.afsar.titipin.ui.home.SplashScreen
+import com.afsar.titipin.ui.home.WelcomeScreen
 import com.afsar.titipin.ui.home.auth.login.LoginScreen
 import com.afsar.titipin.ui.home.auth.login.LoginViewModel
 import com.afsar.titipin.ui.home.auth.register.RegisterScreen
@@ -29,17 +31,26 @@ fun RootNavigation() {
         startDestination = RootRoutes.SPLASH
     ) {
         composable(RootRoutes.SPLASH) {
-            Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                Text("Titip.in Logo")
-            }
-
-            LaunchedEffect(startDest) {
-                startDest?.let { target ->
-                    navController.navigate(target) {
-                        popUpTo(RootRoutes.SPLASH) { inclusive = true }
+            SplashScreen(
+                onTimeout = {
+                    navController.navigate(RootRoutes.WELCOME){
+                        popUpTo(RootRoutes.SPLASH) {
+                            inclusive = true
+                        }
                     }
                 }
-            }
+            )
+//            Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+//                Text("Titip.in Logo")
+//            }
+//
+//            LaunchedEffect(startDest) {
+//                startDest?.let { target ->
+//                    navController.navigate(target) {
+//                        popUpTo(RootRoutes.SPLASH) { inclusive = true }
+//                    }
+//                }
+//            }
         }
 
         // 2. LOGIN SCREEN
@@ -50,22 +61,38 @@ fun RootNavigation() {
                         popUpTo(RootRoutes.LOGIN) { inclusive = true }
                     }
                 },
-                onNavigateToRegister = {
-                    navController.navigate("register_route")
+                onRegisterClick = {
+                    navController.navigate(RootRoutes.REGISTER)
+                },
+                onBackClick = {
+                    navController.popBackStack()
                 }
             )
         }
         composable("register_route") {
             RegisterScreen(
-//                onRegisterSuccess = {
-//                    // Balik ke login atau langsung masuk app
+                onRegisterSuccess = {
+                    // Balik ke login atau langsung masuk app
 //                    navController.popBackStack()
-//                },
-//                onBackToLogin = {
-//                    navController.popBackStack()
-//                }
+                        navController.navigate(RootRoutes.LOGIN) {
+                            popUpTo(RootRoutes.REGISTER) { inclusive = true }
+                        }
+                },
+                onLoginClick = {
+                    navController.navigate(RootRoutes.LOGIN) {
+                        popUpTo(RootRoutes.REGISTER) { inclusive = true }
+                    }
+                }
             )
         }
+
+        composable ( "welcome_route" ){
+            WelcomeScreen(
+                onLoginClick = { navController.navigate(RootRoutes.LOGIN) },
+                onSignUpClick = { navController.navigate(RootRoutes.REGISTER) }
+            )
+        }
+
         composable(RootRoutes.MAIN_APP) {
             MainAppNav(
                 onLogOut = {

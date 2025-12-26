@@ -22,6 +22,8 @@ class RegisterViewModel @Inject constructor(
     var usernameInput by mutableStateOf("")
     var emailInput by mutableStateOf("")
     var passwordInput by mutableStateOf("")
+    var confirmPasswordInput by mutableStateOf("")
+
     var isLoading by mutableStateOf(false)
     var errorMessage by mutableStateOf<String?>(null)
     var isRegisterSuccess by mutableStateOf(false)
@@ -53,6 +55,11 @@ class RegisterViewModel @Inject constructor(
     fun onRegisterClicked() {
         if (nameInput.isBlank() || usernameInput.isBlank() || emailInput.isBlank() || passwordInput.isBlank()) {
             errorMessage = "Semua kolom wajib diisi!"
+            return
+        }
+
+        if (passwordInput != confirmPasswordInput) {
+            errorMessage = "Konfirmasi password tidak cocok!"
             return
         }
 
