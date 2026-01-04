@@ -137,7 +137,7 @@ class PaymentViewModel @Inject constructor(
     fun initiatePayment(
         sessionId: String,
         userId: String,
-        amount: Double,
+        amount: Long,
         userName: String,
         userEmail: String,
         userPhone: String
@@ -148,12 +148,12 @@ class PaymentViewModel @Inject constructor(
             snapToken = null
 
             // Konversi Double ke Long (Rupiah penuh)
-            val amountLong = amount.toLong()
+//            val amountLong = amount.toLong()
 
             paymentRepository.generateSnapToken(
                 sessionId = sessionId,
                 userId = userId,
-                amount = amountLong,
+                amount = amount,
                 userName = userName,
                 userEmail = userEmail,
                 userPhone = userPhone

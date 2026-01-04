@@ -1,5 +1,6 @@
 package com.afsar.titipin.ui.home.auth.login
 
+import android.util.Log
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
@@ -10,6 +11,9 @@ import com.afsar.titipin.ui.components.navigation.RootRoutes
 import com.google.android.gms.auth.api.signin.GoogleSignInAccount
 import com.google.android.gms.common.api.ApiException
 import com.google.android.gms.tasks.Task
+import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.firestore.FirebaseFirestore
+import com.google.firebase.messaging.FirebaseMessaging
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -35,6 +39,29 @@ class LoginViewModel @Inject constructor(
 
     init {
         checkActiveSession()
+    }
+
+
+
+    // Contoh Helper Function untuk dipanggil di MainActivity / ViewModel
+    fun checkAndSaveFcmToken() {
+        val uid = FirebaseAuth.getInstance().currentUser?.uid ?: return
+
+        FirebaseMessaging.getInstance().token.addOnCompleteListener { task ->
+            if (!task.isSuccessful) {
+                Log.w("FCM", "Gagal fetch token FCM", task.exception)
+                return@addOnCompleteListener
+            }
+
+            // Token didapat
+            val token = task.result
+            Log.d("FCM", "Token saat ini: $token")
+
+            // Update ke Firestore
+            FirebaseFirestore.getInstance().collection("users")
+                .document(uid)
+                .update("fcmToken", token)
+        }
     }
 
     fun onLoginClicked() {

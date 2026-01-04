@@ -1,119 +1,3 @@
-//package com.afsar.titipin.data.remote
-//
-//import android.util.Log
-//import com.afsar.titipin.data.model.*
-//import com.afsar.titipin.data.remote.api.FirebaseFunctionsApi
-//import com.google.firebase.firestore.FirebaseFirestore
-//import kotlinx.coroutines.channels.awaitClose
-//import kotlinx.coroutines.flow.Flow
-//import kotlinx.coroutines.flow.callbackFlow
-//import kotlinx.coroutines.flow.flow
-//import javax.inject.Inject
-//
-//class PaymentRepositoryImpl @Inject constructor(
-//    private val api: FirebaseFunctionsApi,
-//    private val firestore: FirebaseFirestore
-//) : PaymentRepository {
-//
-//    override suspend fun generateSnapToken(
-//        sessionId: String,
-//        userId: String,
-//        amount: Double,
-//        userName: String,
-//        userEmail: String
-//    ): Flow<Result<SnapTokenResponse>> = flow {
-//        try {
-//            val request = SnapTokenRequest(
-//                sessionId = sessionId,
-//                userId = userId,
-//                amount = amount,
-//                userName = userName,
-//                userEmail = userEmail
-//            )
-//
-//            Log.d("PaymentRepo", "Requesting snap token: $request")
-//            val response = api.generateSnapToken(request)
-//
-//            if (response.isSuccessful && response.body() != null) {
-//                Log.d("PaymentRepo", "Snap token received: ${response.body()}")
-//                emit(Result.success(response.body()!!))
-//            } else {
-//                val errorMsg = "Failed to generate snap token: ${response.code()} - ${response.message()}"
-//                Log.e("PaymentRepo", errorMsg)
-//                emit(Result.failure(Exception(errorMsg)))
-//            }
-//        } catch (e: Exception) {
-//            Log.e("PaymentRepo", "Error generating snap token", e)
-//            emit(Result.failure(e))
-//        }
-//    }
-//
-//    override fun getPaymentStatus(orderId: String): Flow<Result<PaymentInfo?>> = callbackFlow {
-//        val listener = firestore.collection("payments")
-//            .whereEqualTo("orderId", orderId)
-//            .limit(1)
-//            .addSnapshotListener { snapshot, error ->
-//                if (error != null) {
-//                    trySend(Result.failure(error))
-//                    return@addSnapshotListener
-//                }
-//
-//                if (snapshot != null && !snapshot.isEmpty) {
-//                    val payment = snapshot.documents[0].toObject(PaymentInfo::class.java)
-//                    trySend(Result.success(payment))
-//                } else {
-//                    trySend(Result.success(null))
-//                }
-//            }
-//
-//        awaitClose { listener.remove() }
-//    }
-//
-//    override fun getSessionPayments(sessionId: String): Flow<Result<List<PaymentInfo>>> = callbackFlow {
-//        val listener = firestore.collection("payments")
-//            .whereEqualTo("sessionId", sessionId)
-//            .addSnapshotListener { snapshot, error ->
-//                if (error != null) {
-//                    trySend(Result.failure(error))
-//                    return@addSnapshotListener
-//                }
-//
-//                val payments = snapshot?.toObjects(PaymentInfo::class.java) ?: emptyList()
-//                trySend(Result.success(payments))
-//            }
-//
-//        awaitClose { listener.remove() }
-//    }
-//
-//    override suspend fun disburseFunds(
-//        sessionId: String,
-//        jastiperId: String
-//    ): Flow<Result<DisbursementResponse>> = flow {
-//        try {
-//            val request = DisbursementRequest(
-//                sessionId = sessionId,
-//                jastiperId = jastiperId
-//            )
-//
-//            Log.d("PaymentRepo", "Requesting disbursement: $request")
-//            val response = api.disburseFunds(request)
-//
-//            if (response.isSuccessful && response.body() != null) {
-//                Log.d("PaymentRepo", "Disbursement response: ${response.body()}")
-//                emit(Result.success(response.body()!!))
-//            } else {
-//                val errorMsg = "Failed to disburse funds: ${response.code()} - ${response.message()}"
-//                Log.e("PaymentRepo", errorMsg)
-//                emit(Result.failure(Exception(errorMsg)))
-//            }
-//        } catch (e: Exception) {
-//            Log.e("PaymentRepo", "Error disbursing funds", e)
-//            emit(Result.failure(e))
-//        }
-//    }
-//}
-
-
 package com.afsar.titipin.data.remote
 
 import android.util.Log
@@ -131,16 +15,17 @@ class PaymentRepositoryImpl @Inject constructor(
     private val firestore: FirebaseFirestore
 ) : PaymentRepository {
 
+    // --- 1. GENERATE TOKEN (Untuk User Bayar) ---
     override suspend fun generateSnapToken(
         sessionId: String,
         userId: String,
-        amount: Long, // Sudah Long
+        amount: Long, // Subtotal (Harga + Tip) dalam Long (tanpa desimal)
         userName: String,
         userEmail: String,
         userPhone: String
     ): Flow<Result<SnapTokenResponse>> = flow {
         try {
-            // Mapping ke Object Request (yang sudah ada @SerializedName)
+            // Mapping data ke Request Object
             val request = SnapTokenRequest(
                 sessionId = sessionId,
                 userId = userId,
@@ -151,27 +36,29 @@ class PaymentRepositoryImpl @Inject constructor(
             )
 
             Log.d("PaymentRepo", "Requesting snap token: $request")
+
+            // Panggil API Backend
             val response = api.generateSnapToken(request)
 
             if (response.isSuccessful && response.body() != null) {
-                Log.d("PaymentRepo", "Snap token received: ${response.body()}")
+                Log.d("PaymentRepo", "Success! Token: ${response.body()?.snapToken}")
                 emit(Result.success(response.body()!!))
             } else {
-                // Handle error message dari backend/Midtrans
-                val errorBody = response.errorBody()?.string() ?: "Unknown error"
-                val errorMsg = "Failed to generate token (${response.code()}): $errorBody"
+                // Ambil pesan error detail dari backend
+                val errorBody = response.errorBody()?.string()
+                val errorMsg = "Backend Error (${response.code()}): $errorBody"
                 Log.e("PaymentRepo", errorMsg)
                 emit(Result.failure(Exception(errorMsg)))
             }
         } catch (e: Exception) {
-            Log.e("PaymentRepo", "Error generating snap token", e)
+            Log.e("PaymentRepo", "Network/Client Error", e)
             emit(Result.failure(e))
         }
     }
 
+    // --- 2. CEK STATUS PAYMENT (Realtime Firestore) ---
     override fun getPaymentStatus(orderId: String): Flow<Result<PaymentInfo?>> = callbackFlow {
-        // Asumsi: "payments" adalah Root Collection (mudah di-query)
-        // Jika nested di dalam session, gunakan firestore.collectionGroup("payments")
+        // Query ke collection 'payments' berdasarkan orderId
         val listener = firestore.collection("payments")
             .whereEqualTo("orderId", orderId)
             .limit(1)
@@ -182,11 +69,10 @@ class PaymentRepositoryImpl @Inject constructor(
                 }
 
                 if (snapshot != null && !snapshot.isEmpty) {
-                    // Aman: Cek !isEmpty sebelum akses index [0]
                     val payment = snapshot.documents[0].toObject(PaymentInfo::class.java)
                     trySend(Result.success(payment))
                 } else {
-                    // Belum ada data payment (User belum bayar)
+                    // Data belum ada (belum klik bayar)
                     trySend(Result.success(null))
                 }
             }
@@ -194,8 +80,8 @@ class PaymentRepositoryImpl @Inject constructor(
         awaitClose { listener.remove() }
     }
 
+    // --- 3. LIST PEMBAYARAN SESI (Untuk Jastiper Cek Siapa yang Sudah Bayar) ---
     override fun getSessionPayments(sessionId: String): Flow<Result<List<PaymentInfo>>> = callbackFlow {
-        // Query history pembayaran di sesi tertentu
         val listener = firestore.collection("payments")
             .whereEqualTo("sessionId", sessionId)
             .addSnapshotListener { snapshot, error ->
@@ -211,6 +97,7 @@ class PaymentRepositoryImpl @Inject constructor(
         awaitClose { listener.remove() }
     }
 
+    // --- 4. PENCAIRAN DANA (Untuk Jastiper) ---
     override suspend fun disburseFunds(
         sessionId: String,
         jastiperId: String,
@@ -219,7 +106,6 @@ class PaymentRepositoryImpl @Inject constructor(
         accountName: String
     ): Flow<Result<DisbursementResponse>> = flow {
         try {
-            // Sertakan detail bank di request agar Backend tidak bingung
             val request = DisbursementRequest(
                 sessionId = sessionId,
                 jastiperId = jastiperId,
@@ -232,17 +118,39 @@ class PaymentRepositoryImpl @Inject constructor(
             val response = api.disburseFunds(request)
 
             if (response.isSuccessful && response.body() != null) {
-                Log.d("PaymentRepo", "Disbursement success: ${response.body()}")
+                Log.d("PaymentRepo", "Disbursement Success: ${response.body()}")
                 emit(Result.success(response.body()!!))
             } else {
-                val errorBody = response.errorBody()?.string() ?: "Unknown error"
+                val errorBody = response.errorBody()?.string()
                 val errorMsg = "Disbursement Failed (${response.code()}): $errorBody"
                 Log.e("PaymentRepo", errorMsg)
                 emit(Result.failure(Exception(errorMsg)))
             }
         } catch (e: Exception) {
-            Log.e("PaymentRepo", "Error contacting server", e)
+            Log.e("PaymentRepo", "Network Error", e)
             emit(Result.failure(e))
         }
+    }
+
+    override fun getDisbursementBySession(sessionId: String): Flow<Result<DisbursementInfo?>> = callbackFlow {
+        val listener = firestore.collection("disbursements")
+            .whereEqualTo("sessionId", sessionId)
+            .limit(1) // Ambil 1 saja cukup
+            .addSnapshotListener { snapshot, error ->
+                if (error != null) {
+                    trySend(Result.failure(error))
+                    return@addSnapshotListener
+                }
+
+                if (snapshot != null && !snapshot.isEmpty) {
+                    // Ada data pencairan!
+                    val disbursement = snapshot.documents[0].toObject(DisbursementInfo::class.java)
+                    trySend(Result.success(disbursement))
+                } else {
+                    // Belum pernah cair
+                    trySend(Result.success(null))
+                }
+            }
+        awaitClose { listener.remove() }
     }
 }

@@ -39,10 +39,10 @@ interface FirebaseFunctionsApi {
         @Body request: SnapTokenRequest
     ): Response<SnapTokenResponse>
 
-    @GET("checkPaymentStatus")
-    suspend fun checkPaymentStatus(
-        @Query("order_id") orderId: String // Sesuaikan query param dengan backend (snake_case)
-    ): Response<PaymentStatusResponse>
+//    @GET("checkPaymentStatus")
+//    suspend fun checkPaymentStatus(
+//        @Query("order_id") orderId: String // Sesuaikan query param dengan backend (snake_case)
+//    ): Response<PaymentStatusResponse>
 
     @POST("disburseFunds")
     suspend fun disburseFunds(

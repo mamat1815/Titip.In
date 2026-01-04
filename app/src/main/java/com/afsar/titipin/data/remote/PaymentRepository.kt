@@ -26,6 +26,7 @@
 
 package com.afsar.titipin.data.remote
 
+import com.afsar.titipin.data.model.DisbursementInfo
 import com.afsar.titipin.data.model.DisbursementResponse
 import com.afsar.titipin.data.model.PaymentInfo
 import com.afsar.titipin.data.model.SnapTokenResponse
@@ -55,4 +56,6 @@ interface PaymentRepository {
         accountNumber: String,
         accountName: String
     ): Flow<Result<DisbursementResponse>>
+    fun getDisbursementBySession(sessionId: String): Flow<Result<DisbursementInfo?>>
+
 }

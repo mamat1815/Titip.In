@@ -239,6 +239,7 @@ dependencies {
     implementation(libs.hilt.android)
     implementation(libs.firebase.firestore.ktx)
     implementation(libs.play.services.location)
+    implementation(libs.firebase.messaging.ktx)
     ksp(libs.hilt.compiler)
     implementation(libs.androidx.hilt.navigation.compose)
 

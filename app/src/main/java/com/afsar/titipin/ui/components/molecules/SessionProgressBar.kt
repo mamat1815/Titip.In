@@ -33,6 +33,8 @@ fun SessionProgressBar(
     )
 
 
+//    Todo tambahin animasi
+
     Surface(
         shape = RoundedCornerShape(16.dp),
         border = BorderStroke(1.dp, Color.LightGray),

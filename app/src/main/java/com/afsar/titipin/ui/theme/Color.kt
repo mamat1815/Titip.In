@@ -5,7 +5,7 @@ import androidx.compose.ui.graphics.Color
 val Primary = Color(0xFF2A004E)
 val Accent = Color(0xFFC77DFF)
 
-val BackgroundLight = Color(0xFFF7F5F8)
+val BackgroundLight = Color(0xFFF7F7F7)
 val BackgroundDark = Color(0xFF121212)
 
 val CardDark = Color(0xFF1E1E1E)
@@ -21,7 +21,9 @@ val BorderDark = Color(0xFF333333)
 
 
 val OrangePrimary = Color(0xFFF28D35) // Warna Tombol Utama
+val OrangeSecondary = Color(0xFFFDC693)
 val TextPrimary = Color(0xFF1A1A1A)   // Warna Teks Hitam
-val TextSecondary = Color(0xFF9CA3AF) // Warna Teks Abu (Placeholder)
+val TextSecondary = Color(0xFF9CA3AF)
+val NavyColor = Color(0xFF13204E)// Warna Teks Abu (Placeholder)
 val InputBg = Color(0xFFF3F4F6)       // Warna Abu untuk Background Input
 val White = Color(0xFFFFFFFF)

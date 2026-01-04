@@ -34,102 +34,62 @@ package com.afsar.titipin.data.model
 //    val netAmount: Double = 0.0,
 //    val disbursementId: String = ""
 //)
+//package com.afsar.titipin.data.model
 
+import com.google.firebase.Timestamp
+import com.google.firebase.firestore.ServerTimestamp
 import com.google.gson.annotations.SerializedName
 
+// --- REQUEST GENERATE TOKEN ---
 data class SnapTokenRequest(
-    @SerializedName("session_id")
-    val sessionId: String,
-
-    @SerializedName("user_id")
-    val userId: String,
-
-    // Gunakan Long untuk Rupiah (Hindari Double untuk uang agar presisi)
-    @SerializedName("amount")
-    val amount: Long,
-
-    @SerializedName("user_name")
-    val userName: String,
-
-    @SerializedName("user_email")
-    val userEmail: String,
-
-    @SerializedName("user_phone")
-    val userPhone: String = "", // Tambahan: Penting untuk E-Wallet
-
-    // Opsional: Kirim rincian barang agar muncul di halaman checkout Midtrans
-    @SerializedName("item_name")
-    val itemName: String = ""
+    @SerializedName("sessionId") val sessionId: String,
+    @SerializedName("userId") val userId: String,
+    @SerializedName("amount") val amount: Long, // Subtotal (Barang + Tip)
+    @SerializedName("userName") val userName: String,
+    @SerializedName("userEmail") val userEmail: String,
+    @SerializedName("userPhone") val userPhone: String
 )
 
+// --- RESPONSE GENERATE TOKEN ---
 data class SnapTokenResponse(
-    @SerializedName("token") // Midtrans biasanya balikin key "token" bukan "snapToken"
-    val snapToken: String,
-
-    @SerializedName("redirect_url")
-    val redirectUrl: String? = null,
-
-    @SerializedName("order_id")
-    val orderId: String
+    @SerializedName("success") val success: Boolean,
+    @SerializedName("snap_token") val snapToken: String,
+    @SerializedName("order_id") val orderId: String,
+    @SerializedName("redirect_url") val redirectUrl: String?
 )
 
+// --- REQUEST DISBURSEMENT ---
 data class DisbursementRequest(
-    @SerializedName("session_id")
-    val sessionId: String,
-
-    @SerializedName("jastiper_id")
-    val jastiperId: String,
-
-    // WAJIB: Kirim detail bank tujuan secara eksplisit demi keamanan
-    @SerializedName("bank_code")
-    val bankCode: String, // ex: "bca", "bri"
-
-    @SerializedName("account_number")
-    val accountNumber: String,
-
-    @SerializedName("account_name") // Nama pemilik rek (untuk validasi)
-    val accountName: String
+    @SerializedName("sessionId") val sessionId: String,
+    @SerializedName("jastiperId") val jastiperId: String,
+    @SerializedName("bankCode") val bankCode: String, // Contoh: "bca", "bri"
+    @SerializedName("accountNumber") val accountNumber: String,
+    @SerializedName("accountName") val accountName: String
 )
 
+// --- RESPONSE DISBURSEMENT ---
 data class DisbursementResponse(
-    @SerializedName("success")
-    val success: Boolean,
-
-    @SerializedName("message")
-    val message: String,
-
-    @SerializedName("total_collected")
-    val totalCollected: Double = 0.0,
-
-    @SerializedName("total_payment_fees")
-    val totalPaymentFees: Double = 0.0,
-
-    @SerializedName("disbursement_fee")
-    val disbursementFee: Double = 0.0,
-
-    @SerializedName("net_amount")
-    val netAmount: Double = 0.0,
-
-    @SerializedName("disbursement_id") // ID referensi internal kita
-    val disbursementId: String = "",
-
-    @SerializedName("midtrans_ref_id") // ID dari Midtrans Iris (Payouts)
-    val midtransRefId: String = ""
+    @SerializedName("success") val success: Boolean,
+    @SerializedName("message") val message: String,
+    @SerializedName("total_collected") val totalCollected: Double,
+    @SerializedName("net_amount") val netAmount: Double,
+    @SerializedName("disbursement_id") val disbursementId: String?
 )
 
-data class PaymentStatusResponse(
-    @SerializedName("transaction_status") // Midtrans field: capture, settlement, pending, deny, expire
-    val status: String,
-
-    @SerializedName("order_id")
-    val orderId: String, // Penting biar tau order mana yang lunas
-
-    @SerializedName("gross_amount")
-    val amount: String, // Midtrans kadang balikin amount sebagai String "10000.00"
-
-    @SerializedName("payment_type")
-    val paymentType: String? = null,
-
-    @SerializedName("transaction_time")
-    val transactionTime: String? = null
+// --- FIRESTORE PAYMENT INFO (Untuk Read Data) ---
+// Pastikan class ini punya empty constructor untuk Firestore .toObject()
+data class PaymentInfo(
+    val id: String = "",
+    val orderId: String = "",
+    val sessionId: String = "",
+    val userId: String = "",
+    val amount: Double = 0.0, // Subtotal
+    val adminFee: Double = 0.0, // Fee App
+    val grossAmount: Double = 0.0, // Total yg dibayar user
+    val status: String = "pending", // pending, success, failed
+    val paymentType: String = "",
+    // ... field timestamp dll
+    @ServerTimestamp
+    val createdAt: Timestamp? = null,
+    val paidAt: Timestamp? = null
 )

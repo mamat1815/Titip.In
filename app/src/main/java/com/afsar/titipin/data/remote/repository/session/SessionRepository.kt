@@ -9,13 +9,16 @@ import kotlinx.coroutines.flow.Flow
 interface SessionRepository {
 
     fun createSession(session: Session): Flow<Result<Boolean>>
+
     fun getListSession(circleId: String): Flow<Result<List<Session>>>
     fun getSessionById( sessionId: String): Flow<Result<Session>>
     fun updateSession(circleId: String, sessionId: String, session: Session): Flow<Result<Boolean>>
     fun deleteSession(circleId: String, sessionId: String): Flow<Result<Boolean>>
     fun getSessionChatMessages(sessionId: String): Flow<List<ChatMessage>>
+    fun getMySessions(): Flow<Result<List<Session>>>
+    fun getOneMySession(): Flow<Result<Session>>
 
-    // Kirim chat
+
     fun sendSessionChatMessage(circleId: String, sessionId: String, message: String): Flow<Result<Boolean>>
     fun listenToPaymentsBySessionAndUser(sessionId: String, userId: String): Flow<Result<List<PaymentInfo>>>
 }

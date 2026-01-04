@@ -332,8 +332,6 @@ class AuthRepositoryImpl @Inject constructor(
         }
         awaitClose { }
     }
-
-    // Di dalam AuthRepositoryImpl.kt
     override fun getUsersByIds(uids: List<String>): Flow<Result<List<User>>> = callbackFlow {
         if (uids.isEmpty()) {
             trySend(Result.success(emptyList()))
@@ -341,27 +339,24 @@ class AuthRepositoryImpl @Inject constructor(
             return@callbackFlow
         }
 
-        // Firestore 'in' query maksimal 10 items. Jika member > 10, harus di-chunk.
-        // Ini contoh sederhana (maks 10 user).
-        val chunks = uids.chunked(10) // Pecah jadi list isi 10
-        // Logic fetch all chunks agak kompleks, untuk MVP ambil 10 pertama dulu atau loop.
+        // PENTING: Firestore 'whereIn' maksimal 10 elemen.
+        // Kita ambil 5 saja karena UI cuma butuh stack kecil.
+        val limitedUids = uids.take(5)
 
-        // Cara paling aman untuk MVP:
-        firestore.collection("users")
-            .whereIn(FieldPath.documentId(), uids.take(10))
-            .get()
-            .addOnSuccessListener { snapshot ->
-                val users = snapshot.toObjects(User::class.java)
+        val listener = firestore.collection("users")
+            .whereIn("uid", limitedUids)
+            .addSnapshotListener { snapshot, error ->
+                if (error != null) {
+                    trySend(Result.failure(error))
+                    return@addSnapshotListener
+                }
+
+                val users = snapshot?.toObjects(User::class.java) ?: emptyList()
                 trySend(Result.success(users))
-                close()
             }
-            .addOnFailureListener {
-                trySend(Result.failure(it))
-                close()
-            }
-        awaitClose { }
-    }
 
+        awaitClose { listener.remove() }
+    }
     override fun getCircleSessions(circleId: String): Flow<Result<List<Session>>> = callbackFlow {
         firestore.collection("sessions")
             .whereEqualTo("circleId", circleId)

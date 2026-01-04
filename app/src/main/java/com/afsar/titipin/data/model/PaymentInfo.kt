@@ -21,20 +21,20 @@ import kotlinx.parcelize.Parcelize
 //    val paidAt: Timestamp? = null
 //) : Parcelable
 
-
-@Parcelize
-data class PaymentInfo(
-
-    val id: String = "",
-    val circleId: String = "", // Tambahan biar tau uang dari grup mana
-    val sessionId: String = "",
-    val userId: String = "",
-    val amount: Double = 0.0,
-    val status: String = "pending",
-    val snapToken: String = "",
-    val orderId: String = "", // Jika 1 payment untuk 1 order
-
-    @ServerTimestamp
-    val createdAt: Timestamp? = null,
-    val paidAt: Timestamp? = null
-) : Parcelable
+//
+//@Parcelize
+//data class PaymentInfo(
+//
+//    val id: String = "",
+//    val circleId: String = "", // Tambahan biar tau uang dari grup mana
+//    val sessionId: String = "",
+//    val userId: String = "",
+//    val amount: Double = 0.0,
+//    val status: String = "pending",
+//    val snapToken: String = "",
+//    val orderId: String = "", // Jika 1 payment untuk 1 order
+//
+//    @ServerTimestamp
+//    val createdAt: Timestamp? = null,
+//    val paidAt: Timestamp? = null
+//) : Parcelable

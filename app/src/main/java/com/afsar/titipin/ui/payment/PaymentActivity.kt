@@ -63,7 +63,8 @@ class PaymentActivity : ComponentActivity() {
 
         val sessionId = intent.getStringExtra(EXTRA_SESSION_ID) ?: ""
         val userId = intent.getStringExtra(EXTRA_USER_ID) ?: ""
-        val amount = intent.getDoubleExtra(EXTRA_AMOUNT, 0.0)
+//        val amount = intent.getDoubleExtra(EXTRA_AMOUNT, 0.0)
+        val amount = intent.getLongExtra(EXTRA_AMOUNT, 0L)
         val userName = intent.getStringExtra(EXTRA_USER_NAME) ?: ""
         val userEmail = intent.getStringExtra(EXTRA_USER_EMAIL) ?: ""
         val userPhone = intent.getStringExtra(EXTRA_USER_PHONE) ?: ""
@@ -130,7 +131,7 @@ fun PaymentScreen(
     viewModel: PaymentViewModel,
     sessionId: String,
     userId: String,
-    amount: Double,
+    amount: Long,
     userName: String,
     userEmail: String,
     onLaunchPayment: (String) -> Unit,
@@ -141,15 +142,29 @@ fun PaymentScreen(
     val errorMessage = viewModel.errorMessage
 
 
+    // Di dalam PaymentActivity.kt -> PaymentScreen
+
     LaunchedEffect(Unit) {
-        viewModel.initiatePayment(
-            sessionId = sessionId,
-            userId = userId,
-            amount = amount,
-            userName = userName,
-            userEmail = userEmail,
-            userPhone = "082198547240" // TAMBAHAN: Wajib ada sesuai Repo
-        )
+        // --- DEBUGGING LOG ---
+        Log.d("PaymentDebug", "Sending Data to Backend:")
+        Log.d("PaymentDebug", "SessionID: '$sessionId'")
+        Log.d("PaymentDebug", "UserID: '$userId'")
+        Log.d("PaymentDebug", "Amount: $amount")
+        // ---------------------
+
+        if (sessionId.isNotBlank() && userId.isNotBlank() && amount > 0) {
+            viewModel.initiatePayment(
+                sessionId = sessionId,
+                userId = userId,
+                amount = amount,
+                userName = userName,
+                userEmail = userEmail,
+                userPhone = "08123456789"
+            )
+        } else {
+            Log.e("PaymentDebug", "DATA TIDAK VALID! Pembayaran dibatalkan.")
+            // Tampilkan error di layar atau Toast
+        }
     }
 
     LaunchedEffect(snapToken) {

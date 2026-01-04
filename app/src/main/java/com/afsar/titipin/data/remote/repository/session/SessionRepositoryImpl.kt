@@ -1,6 +1,8 @@
 package com.afsar.titipin.data.remote.repository.session
 
+import android.util.Log
 import com.afsar.titipin.data.model.ChatMessage
+import com.afsar.titipin.data.model.Order
 import com.afsar.titipin.data.model.PaymentInfo
 import com.afsar.titipin.data.model.Session
 import com.afsar.titipin.data.model.User
@@ -19,7 +21,6 @@ class SessionRepositoryImpl @Inject constructor(
     private val firestore: FirebaseFirestore
 ) : SessionRepository {
 
-    // Helper untuk path yang rapi
     private fun getSessionsCollection(circleId: String) =
         firestore.collection("circles").document(circleId).collection("sessions")
 
@@ -34,15 +35,12 @@ class SessionRepositoryImpl @Inject constructor(
             return@callbackFlow
         }
 
-        // 1. Ambil data User dulu untuk Creator Info
         try {
             val userSnapshot = firestore.collection("users").document(myUid).get().await()
             val myData = userSnapshot.toObject(User::class.java)
 
             if (myData != null) {
-                // Gunakan Transaction agar Atomik:
-                // (Buat Session BARU) + (Update status Circle jadi AKTIF)
-                // Jika satu gagal, semua batal.
+
                 firestore.runTransaction { transaction ->
                     val newSessionRef = getSessionsCollection(session.circleId).document()
 
@@ -51,16 +49,13 @@ class SessionRepositoryImpl @Inject constructor(
                         creatorId = myUid,
                         creatorName = myData.name,
                         status = "open",
-                        createdAt = null, // Biarkan null agar @ServerTimestamp bekerja
+                        createdAt = null,
                         currentTitipCount = 0,
-                        totalOmzet = 0.0
+//                        totalOmzet = 0.0
                     )
 
-                    // Write 1: Simpan Session
                     transaction.set(newSessionRef, finalSession)
 
-                    // Write 2: Update Parent Circle
-                    // Memberitahu grup bahwa ada sesi belanja aktif sekarang
                     val circleRef = getCircleRef(session.circleId)
                     transaction.update(circleRef, mapOf(
                         "isActiveSession" to true,
@@ -85,7 +80,7 @@ class SessionRepositoryImpl @Inject constructor(
     }
 
     override fun getListSession(circleId: String): Flow<Result<List<Session>>> = callbackFlow {
-        // Menampilkan sesi terbaru di atas
+
         val listener = getSessionsCollection(circleId)
             .orderBy("createdAt", Query.Direction.DESCENDING)
             .addSnapshotListener { snapshot, error ->
@@ -106,8 +101,6 @@ class SessionRepositoryImpl @Inject constructor(
     }
 
     override fun getSessionById(sessionId: String): Flow<Result<Session>> = callbackFlow {
-        // Gunakan Collection Group "sessions"
-        // Ini mencari ke seluruh database untuk dokumen di koleksi "sessions" yang punya field "id" == sessionId
         val listener = firestore.collectionGroup("sessions")
             .whereEqualTo("id", sessionId)
             .limit(1) // Kita cuma butuh 1
@@ -118,7 +111,8 @@ class SessionRepositoryImpl @Inject constructor(
                 }
 
                 if (snapshot != null && !snapshot.isEmpty) {
-                    // Ambil dokumen pertama yang ditemukan
+                    Log.d("CircleRepo", "Ditemukan $snapshot circle")
+
                     val session = snapshot.documents[0].toObject(Session::class.java)
                     if (session != null) {
                         trySend(Result.success(session))
@@ -138,7 +132,6 @@ class SessionRepositoryImpl @Inject constructor(
         sessionId: String,
         session: Session
     ): Flow<Result<Boolean>> = callbackFlow {
-        // Gunakan SetOptions.merge() agar field lain (seperti createdAt) tidak hilang
         getSessionsCollection(circleId).document(sessionId)
             .set(session, SetOptions.merge())
             .addOnSuccessListener {
@@ -201,6 +194,103 @@ class SessionRepositoryImpl @Inject constructor(
                 val messages = snapshot?.toObjects(ChatMessage::class.java) ?: emptyList()
                 trySend(messages)
             }
+
+        awaitClose { listener.remove() }
+    }
+
+    override fun getMySessions(): Flow<Result<List<Session>>> = callbackFlow {
+        // 1. Cek User Login
+        val myUid = firebaseAuth.currentUser?.uid
+        if (myUid == null) {
+            trySend(Result.failure(Exception("User belum login")))
+            close()
+            return@callbackFlow
+        }
+
+        // 2. Gunakan Collection Group
+        // Ini akan mencari semua koleksi bernama "sessions" di seluruh database
+        val listener = firestore.collectionGroup("sessions")
+            .whereEqualTo("creatorId", myUid) // Filter sesi yang SAYA buat
+            .orderBy("createdAt", Query.Direction.DESCENDING) // Urutkan dari yang terbaru
+            .addSnapshotListener { snapshot, error ->
+
+                // 3. Handle Error
+                if (error != null) {
+                    // PENTING: Jika error, cek Logcat.
+                    // Query ini MEMBUTUHKAN INDEX Composite di Firebase Console.
+                    trySend(Result.failure(error))
+                    return@addSnapshotListener
+                }
+
+                // 4. Mapping Data
+                if (snapshot != null) {
+                    val sessions = snapshot.toObjects(Session::class.java)
+                    trySend(Result.success(sessions))
+                } else {
+                    trySend(Result.success(emptyList()))
+                }
+            }
+
+        // 5. Bersihkan listener saat tidak dipakai
+        awaitClose { listener.remove() }
+    }
+
+    override fun getOneMySession(): Flow<Result<Session>> = callbackFlow {
+        val myUid = firebaseAuth.currentUser?.uid
+        if (myUid == null) {
+            trySend(Result.failure(Exception("User belum login")))
+            close()
+            return@callbackFlow
+        }
+
+        val circleQuery = firestore.collection("circles")
+            .whereArrayContains("memberIds", myUid)
+            .whereEqualTo("isActiveSession", true)
+            .orderBy("lastMessageTime", Query.Direction.DESCENDING)
+            .limit(1)
+
+        val listener = circleQuery.addSnapshotListener { snapshot, error ->
+            if (error != null) {
+                trySend(Result.failure(error))
+                return@addSnapshotListener
+            }
+
+            if (snapshot != null && !snapshot.isEmpty) {
+                val circleDoc = snapshot.documents[0]
+                val circleId = circleDoc.id
+                // Pastikan field ini sesuai dengan yang kamu simpan di createSession
+                val activeSessionId = circleDoc.getString("activeSessionId")
+
+                if (activeSessionId != null) {
+                    // 2. Setelah dapat ID-nya, ambil data SESSION detailnya
+                    val sessionRef = firestore.collection("circles")
+                        .document(circleId)
+                        .collection("sessions")
+                        .document(activeSessionId)
+
+                    // Kita pakai get() sekali jalan saja karena circle listenernya sudah realtime
+                    // Atau bisa pakai addSnapshotListener lagi kalau mau sesi-nya juga realtime update
+                    sessionRef.get()
+                        .addOnSuccessListener { sessionDoc ->
+                            val session = sessionDoc.toObject(Session::class.java)
+                            if (session != null) {
+                                trySend(Result.success(session))
+                            } else {
+                                trySend(Result.failure(Exception("Data sesi kosong")))
+                            }
+                        }
+                        .addOnFailureListener { e ->
+                            trySend(Result.failure(e))
+                        }
+                } else {
+                    // Circle aktif true, tapi activeSessionId null (Data tidak konsisten)
+                    trySend(Result.failure(Exception("Session ID tidak ditemukan di Circle")))
+                }
+            } else {
+                // Tidak ada circle yang punya sesi aktif
+                trySend(Result.failure(Exception("Tidak ada sesi aktif saat ini")))
+            }
+        }
 
         awaitClose { listener.remove() }
     }

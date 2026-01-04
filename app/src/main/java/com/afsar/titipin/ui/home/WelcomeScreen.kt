@@ -14,6 +14,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -24,9 +25,11 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import com.afsar.titipin.R
 import com.afsar.titipin.ui.components.atoms.PrimaryButton
 import com.afsar.titipin.ui.components.atoms.SecondaryButton
+//import com.afsar.titipin.ui.home.viewmodel.WelcomeViewModel
 import com.afsar.titipin.ui.theme.TextPrimary
 import com.afsar.titipin.ui.theme.TextSecondary
 import com.afsar.titipin.ui.theme.White
@@ -34,8 +37,16 @@ import com.afsar.titipin.ui.theme.White
 @Composable
 fun WelcomeScreen(
     onLoginClick: () -> Unit,
-    onSignUpClick: () -> Unit
+    onSignUpClick: () -> Unit,
+//    onNavigateToHome: () -> Unit, // 1. Tambahkan callback ini
+//    viewModel: WelcomeViewModel = hiltViewModel() // 2. Inject ViewModel
 ) {
+//    LaunchedEffect(Unit) {
+//        if (viewModel.isUserLoggedIn()) {
+//            onNavigateToHome()
+//        }
+//    }
+
     Column(
         modifier = Modifier
             .fillMaxSize()

@@ -1,247 +1,212 @@
 package com.afsar.titipin.ui.home.screens
 
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.AccountBalance
-import androidx.compose.material.icons.filled.Group
+import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.afsar.titipin.ui.components.CirclesImage
-import com.afsar.titipin.ui.components.ProfileMenuItem
-import com.afsar.titipin.ui.theme.TextDarkSecondary
-import com.afsar.titipin.ui.theme.TextLightPrimary
 import com.afsar.titipin.ui.home.viewmodel.ProfileViewModel
+import com.afsar.titipin.ui.theme.OrangePrimary
+import com.afsar.titipin.ui.theme.TextPrimary
 
 @Composable
 fun ProfileScreen(
-    viewModel: ProfileViewModel = hiltViewModel(),
-    onLogoutClick: () -> Unit,
-    onCircleClick: () -> Unit // Callback navigasi
+//    onLogoutClick: () -> Unit, // Callback untuk navigasi logout
+//    onCircleClick: () -> Unit, // Callback jika mau ke menu circle
+    viewModel: ProfileViewModel = hiltViewModel()
 ) {
-    val context = LocalContext.current
-    var showBankAccountDialog by remember { mutableStateOf(false) }
+    val user = viewModel.currentUser
+    val isLoading = viewModel.isLoading
+    val BgColor = Color(0xFFF9FAFB)
 
-    // Tutup dialog otomatis jika sukses simpan
-    LaunchedEffect(viewModel.bankAccountSaveSuccess) {
-        if (viewModel.bankAccountSaveSuccess == true) {
-            showBankAccountDialog = false
+    Box(modifier = Modifier.fillMaxSize().background(BgColor)) {
+
+        // 1. TAMPILKAN LOADING JIKA SEDANG MEMUAT
+        if (isLoading) {
+            CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
         }
-    }
+        // 2. CEK APAKAH USER NULL
+        else if (user != null) {
+            Column(modifier = Modifier.fillMaxSize()) {
 
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .verticalScroll(rememberScrollState())
-            .padding(16.dp),
-        horizontalAlignment = Alignment.CenterHorizontally
-    ) {
-        Spacer(modifier = Modifier.height(16.dp))
-
-        CirclesImage(
-            imageUrl = viewModel.currentUser?.photoUrl,
-            size = 120.dp,
-        )
-
-        Spacer(modifier = Modifier.height(8.dp))
-
-        Text(
-            text = viewModel.currentUser?.name ?: "Loading...",
-            fontWeight = FontWeight.Bold,
-            fontSize = 24.sp,
-            color = TextLightPrimary
-        )
-
-        val username = "@" + (viewModel.currentUser?.username ?: "")
-        Text(
-            text = username,
-            fontWeight = FontWeight.Thin,
-            fontSize = 18.sp,
-            color = TextDarkSecondary
-        )
-
-        Spacer(modifier = Modifier.height(24.dp))
-
-        // --- KARTU REKENING BANK ---
-        Card(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(vertical = 8.dp),
-            colors = CardDefaults.cardColors(containerColor = Color(0xFFF5F7FA))
-        ) {
-            Column(modifier = Modifier.padding(16.dp)) {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
+                // HEADER
+                Column(
+                    modifier = Modifier
+                        .background(Color.White)
+                        .statusBarsPadding()
+                        .padding(16.dp)
+                        .fillMaxWidth()
                 ) {
-                    Column(modifier = Modifier.weight(1f)) {
-                        Text(
-                            text = "Rekening Penerimaan (Jastip)",
-                            fontWeight = FontWeight.Bold,
-                            fontSize = 16.sp
-                        )
-                        Spacer(modifier = Modifier.height(8.dp))
+                    Text("Profil", fontWeight = FontWeight.Bold, fontSize = 24.sp, color = TextPrimary)
+                }
 
-                        val bank = viewModel.currentUser?.bank
-                        if (bank != null && bank.bankAccountNumber.isNotEmpty()) {
-                            Text(
-                                text = "${bank.bankName} (${bank.bankCode})", // Tampilkan kode juga
-                                fontSize = 14.sp,
-                                fontWeight = FontWeight.SemiBold,
-                                color = Color(0xFF370061)
-                            )
-                            Text(
-                                text = bank.bankAccountNumber,
-                                fontSize = 16.sp,
-                                fontWeight = FontWeight.Bold
-                            )
-                            Text(
-                                text = "a.n. ${bank.bankAccountName}",
-                                fontSize = 12.sp,
-                                color = Color.Gray
-                            )
-                        } else {
-                            Text(
-                                text = "Belum ada rekening terdaftar. Anda tidak bisa mencairkan dana jastip.",
-                                fontSize = 12.sp,
-                                color = Color.Gray
-                            )
+                // KONTEN SCROLLABLE
+                Column(
+                    modifier = Modifier
+                        .weight(1f)
+                        .verticalScroll(rememberScrollState())
+                        .padding(horizontal = 24.dp)
+                ) {
+                    Spacer(modifier = Modifier.height(24.dp))
+
+                    // === CARD UTAMA ===
+                    Box(modifier = Modifier.fillMaxWidth().padding(top = 40.dp)) {
+
+                        // Kotak Putih di Bawah
+                        Surface(
+                            shape = RoundedCornerShape(24.dp),
+                            color = Color.White,
+                            border = BorderStroke(1.dp, Color(0xFFEEEEEE)),
+                            modifier = Modifier.fillMaxWidth().padding(top = 40.dp)
+                        ) {
+                            Column(
+                                horizontalAlignment = Alignment.CenterHorizontally,
+                                modifier = Modifier.padding(top = 60.dp, bottom = 24.dp, start = 16.dp, end = 16.dp)
+                            ) {
+                                // Safe call untuk String
+                                Text(user.name.ifEmpty { "Tanpa Nama" }, fontWeight = FontWeight.Bold, fontSize = 18.sp)
+                                Text("@${user.username}", color = Color.Gray, fontSize = 14.sp)
+
+                                Spacer(modifier = Modifier.height(24.dp))
+
+                                // Stats Row (HINDARI !! GANTI DENGAN ?:)
+                                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceAround) {
+                                    StatItem(user.stats?.totalTitip ?: 0, "Total titip", Icons.Default.ShoppingBag)
+                                    StatItem(user.stats?.totalSesi ?: 0, "Total sesi", Icons.Default.ShoppingCart)
+                                    StatItem(user.stats?.totalCircle ?: 0, "Total circle", Icons.Default.SupervisedUserCircle)
+                                }
+
+                                Spacer(modifier = Modifier.height(24.dp))
+
+                                // Wallet Info (HINDARI !! GANTI DENGAN ?:)
+                                Surface(
+                                    shape = RoundedCornerShape(12.dp),
+                                    border = BorderStroke(1.dp, Color(0xFFEEEEEE)),
+                                    color = Color.White,
+                                    modifier = Modifier.fillMaxWidth()
+                                ) {
+                                    Row(modifier = Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
+                                        Column(modifier = Modifier.weight(1f)) {
+                                            Text("Pemasukan", fontSize = 10.sp, color = Color.Gray)
+                                            Text(user.wallet?.income ?: "Rp 0", fontWeight = FontWeight.Bold, fontSize = 14.sp)
+                                        }
+                                        Divider(modifier = Modifier.height(30.dp).width(1.dp))
+                                        Spacer(modifier = Modifier.width(16.dp))
+                                        Column(modifier = Modifier.weight(1f)) {
+                                            Text("Pengeluaran", fontSize = 10.sp, color = Color.Gray)
+                                            Text(user.wallet?.expense ?: "Rp 0", fontWeight = FontWeight.Bold, fontSize = 14.sp)
+                                        }
+                                    }
+                                }
+                            }
                         }
+
+                        // Avatar
+                        CirclesImage(
+                            imageUrl = user.photoUrl,
+                            modifier = Modifier
+                                .size(90.dp)
+                                .align(Alignment.TopCenter)
+                                .border(4.dp, Color.White, CircleShape)
+                        )
+
+                        // Edit Icon
+                        Icon(
+                            imageVector = Icons.Default.Edit,
+                            contentDescription = "Edit",
+                            tint = OrangePrimary,
+                            modifier = Modifier
+                                .align(Alignment.TopEnd)
+                                .padding(top = 56.dp, end = 16.dp)
+                                .clickable {
+                                    // Handle Edit Profile Navigation
+                                }
+                        )
                     }
-                    TextButton(onClick = { showBankAccountDialog = true }) {
-                        Text(if (viewModel.currentUser?.bank?.bankAccountNumber?.isNotEmpty() == true) "Ubah" else "Daftar")
+
+                    Spacer(modifier = Modifier.height(24.dp))
+
+                    // MENU LIST
+                    Text("Pengaturan Umum", fontSize = 14.sp, color = Color.Gray)
+                    Spacer(modifier = Modifier.height(8.dp))
+
+                    ProfileMenuItem(Icons.Default.AccountBalanceWallet, "Opsi Pembayaran") {
+                        // Handle Payment Options
                     }
+                    Spacer(modifier = Modifier.height(12.dp))
+
+                    ProfileMenuItem(Icons.Default.Group, "Circle Saya") {
+//                        onCircleClick()
+                    }
+                    Spacer(modifier = Modifier.height(12.dp))
+
+                    // TOMBOL KELUAR
+                    ProfileMenuItem(Icons.Default.ExitToApp, "Keluar", isDanger = true) {
+                        viewModel.logout() // Panggil fungsi di VM
+//                        onLogoutClick()    // Panggil callback navigasi
+                    }
+
+                    Spacer(modifier = Modifier.height(100.dp)) // Padding bawah biar ga ketutup bottom bar
+                }
+            }
+        } else {
+            Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                Text("Gagal memuat profil. Coba lagi.", color = Color.Gray)
+                Button(onClick = { viewModel.fetchUserProfile() }, modifier = Modifier.padding(top=8.dp)) {
+                    Text("Refresh")
                 }
             }
         }
-
-        Spacer(modifier = Modifier.height(8.dp))
-
-        ProfileMenuItem(
-            icon = Icons.Default.Group,
-            text = "Circle Saya",
-            onClick = onCircleClick
-        )
-
-        Spacer(modifier = Modifier.height(32.dp))
-
-        Button(
-            onClick = onLogoutClick,
-            modifier = Modifier.fillMaxWidth(),
-            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFD32F2F))
-        ) {
-            Text("Logout", color = Color.White)
-        }
-
-        Spacer(modifier = Modifier.height(50.dp))
-    }
-
-    if (showBankAccountDialog) {
-        BankAccountDialog(
-            viewModel = viewModel,
-            onDismiss = {
-                showBankAccountDialog = false
-                viewModel.clearBankAccountMessage()
-            }
-        )
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
+// ... StatItem dan ProfileMenuItem SAMA seperti kodemu ...
 @Composable
-fun BankAccountDialog(
-    viewModel: ProfileViewModel,
-    onDismiss: () -> Unit
-) {
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        icon = { Icon(Icons.Default.AccountBalance, contentDescription = null) },
-        title = { Text("Rekening Pencairan Dana") },
-        text = {
-            Column(modifier = Modifier.fillMaxWidth()) {
-
-                // Input Kode Bank (Penting untuk Midtrans)
-                OutlinedTextField(
-                    value = viewModel.bankCode,
-                    onValueChange = { viewModel.bankCode = it },
-                    label = { Text("Kode Bank (ex: bca, bri)") },
-                    placeholder = { Text("bca") },
-                    modifier = Modifier.fillMaxWidth(),
-                    singleLine = true
-                )
-
-                Spacer(modifier = Modifier.height(8.dp))
-
-                OutlinedTextField(
-                    value = viewModel.bankName,
-                    onValueChange = { viewModel.bankName = it },
-                    label = { Text("Nama Bank Lengkap") },
-                    placeholder = { Text("Bank Central Asia") },
-                    modifier = Modifier.fillMaxWidth(),
-                    singleLine = true
-                )
-
-                Spacer(modifier = Modifier.height(8.dp))
-
-                OutlinedTextField(
-                    value = viewModel.bankAccountNumber,
-                    onValueChange = { viewModel.bankAccountNumber = it },
-                    label = { Text("Nomor Rekening") },
-                    placeholder = { Text("1234567890") },
-                    modifier = Modifier.fillMaxWidth(),
-                    singleLine = true,
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
-                )
-
-                Spacer(modifier = Modifier.height(8.dp))
-
-                OutlinedTextField(
-                    value = viewModel.bankAccountName,
-                    onValueChange = { viewModel.bankAccountName = it },
-                    label = { Text("Nama Pemilik Rekening") },
-                    placeholder = { Text("Sesuai buku tabungan") },
-                    modifier = Modifier.fillMaxWidth(),
-                    singleLine = true
-                )
-
-                if (viewModel.errorMessage != null) {
-                    Spacer(modifier = Modifier.height(8.dp))
-                    Text(
-                        text = viewModel.errorMessage ?: "",
-                        color = Color.Red,
-                        fontSize = 12.sp
-                    )
-                }
-            }
-        },
-        confirmButton = {
-            Button(
-                onClick = { viewModel.updateBankAccount() },
-                enabled = !viewModel.isSavingBankAccount
-            ) {
-                if (viewModel.isSavingBankAccount) {
-                    CircularProgressIndicator(modifier = Modifier.size(20.dp), color = Color.White)
-                } else {
-                    Text("Simpan")
-                }
-            }
-        },
-        dismissButton = {
-            TextButton(onClick = onDismiss) {
-                Text("Batal")
-            }
+fun StatItem(count: Int, label: String, icon: ImageVector) {
+    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+        Text(label, fontSize = 11.sp, color = Color.Gray)
+        Spacer(modifier = Modifier.height(4.dp))
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Icon(imageVector = icon, contentDescription = null, tint = OrangePrimary, modifier = Modifier.size(16.dp))
+            Spacer(modifier = Modifier.width(4.dp))
+            Text(count.toString(), fontWeight = FontWeight.Bold, fontSize = 14.sp)
         }
-    )
+    }
+}
+
+@Composable
+fun ProfileMenuItem(icon: ImageVector, title: String, isDanger: Boolean = false, onClick: () -> Unit) {
+    Surface(
+        shape = RoundedCornerShape(12.dp),
+        color = Color.White,
+        modifier = Modifier.fillMaxWidth().height(56.dp).clickable { onClick() }
+    ) {
+        Row(
+            modifier = Modifier.padding(horizontal = 16.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Icon(imageVector = icon, contentDescription = null, tint = if (isDanger) Color.Red else Color.Black)
+            Spacer(modifier = Modifier.width(16.dp))
+            Text(title, fontWeight = FontWeight.Medium, color = if (isDanger) Color.Red else TextPrimary, modifier = Modifier.weight(1f))
+            Icon(Icons.Default.KeyboardArrowRight, contentDescription = null, tint = Color.LightGray)
+        }
+    }
 }

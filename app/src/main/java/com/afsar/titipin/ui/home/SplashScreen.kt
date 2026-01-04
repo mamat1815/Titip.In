@@ -13,16 +13,27 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
+import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import com.afsar.titipin.R
+import com.afsar.titipin.ui.home.viewmodel.SplashViewModel
 import kotlinx.coroutines.delay
 
 @Composable
 fun SplashScreen(
-    onTimeout: () -> Unit
+    onNavigateToHome: () -> Unit,
+    onNavigateToWelcome: () -> Unit,
+    viewModel: SplashViewModel = hiltViewModel()
 ) {
-    LaunchedEffect(true) {
+    LaunchedEffect(Unit) {
+        // 1. Tahan tampilan selama 2 detik (agar logo terlihat)
         delay(2000)
-        onTimeout()
+
+        // 2. Cek status login
+        if (viewModel.isUserLoggedIn()) {
+            onNavigateToHome()
+        } else {
+            onNavigateToWelcome()
+        }
     }
 
     Box(
@@ -30,11 +41,10 @@ fun SplashScreen(
             .fillMaxSize()
             .background(Color.White),
         contentAlignment = Alignment.Center
-
     ) {
         Image(
-            painter = painterResource(id = R.drawable.ic_titipin),
-            contentDescription = null,
+            painter = painterResource(id = R.drawable.ic_titipin), // Pastikan resource ada
+            contentDescription = "Logo TitipIn",
             modifier = Modifier.size(250.dp)
         )
     }

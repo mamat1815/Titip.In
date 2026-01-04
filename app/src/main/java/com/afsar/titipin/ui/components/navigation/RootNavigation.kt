@@ -32,11 +32,17 @@ fun RootNavigation() {
     ) {
         composable(RootRoutes.SPLASH) {
             SplashScreen(
-                onTimeout = {
-                    navController.navigate(RootRoutes.WELCOME){
-                        popUpTo(RootRoutes.SPLASH) {
-                            inclusive = true
-                        }
+                onNavigateToHome = {
+                    // Jika sudah login, langsung ke Home.
+                    // Hapus splash dari backstack agar tidak bisa back ke splash
+                    navController.navigate(RootRoutes.MAIN_APP) {
+                        popUpTo("splash_route") { inclusive = true }
+                    }
+                },
+                onNavigateToWelcome = {
+                    // Jika belum login, ke Welcome Screen
+                    navController.navigate("welcome_route") {
+                        popUpTo("splash_route") { inclusive = true }
                     }
                 }
             )

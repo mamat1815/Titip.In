@@ -15,7 +15,7 @@ import androidx.navigation.navArgument
 import androidx.navigation.navigation
 import com.afsar.titipin.ui.buy.ShoppingListScreen
 import com.afsar.titipin.ui.session.detail.SessionDetailScreen
-import com.afsar.titipin.ui.session.add.CreateSessionScreen
+//import com.afsar.titipin.ui.session.add.CreateSessionScreen
 import com.afsar.titipin.ui.circle.add.AddCircleScreen
 import com.afsar.titipin.ui.circle.detail.CircleDetailScreen
 import com.afsar.titipin.ui.components.navigation.BottomBarScreen
@@ -26,7 +26,7 @@ import com.afsar.titipin.ui.home.screens.CircleScreen
 import com.afsar.titipin.ui.home.screens.HomeScreen
 import com.afsar.titipin.ui.home.screens.ProfileScreen
 import com.afsar.titipin.ui.home.screens.SessionScreen
-
+import com.afsar.titipin.ui.session.add.CreateSessionScreens
 @Composable
 fun MainAppNav(
     onLogOut: () -> Unit
@@ -36,9 +36,11 @@ fun MainAppNav(
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = navBackStackEntry?.destination?.route
 
+    // REVISI: Hapus 'BottomBarScreen.Add.route' agar BottomBar hilang saat buat sesi
     val showBottomBar = currentRoute in listOf(
         BottomBarScreen.Home.route,
         SessionRoutes.SESSION_LIST,
+         BottomBarScreen.Add.route, // <--- HAPUS INI (Disembunyikan biar fokus isi form)
         DetailRoutes.CIRCLE_LIST,
         BottomBarScreen.Profile.route
     )
@@ -57,36 +59,30 @@ fun MainAppNav(
             modifier = Modifier.padding(bottom = innerPadding.calculateBottomPadding())
         ) {
 
+            // ... (Home Tab & Session Tab TETAP SAMA) ...
+
             // 1. HOME TAB
             composable(BottomBarScreen.Home.route) {
                 HomeScreen(
                     onSessionClick = { sessionId ->
                         navController.navigate(SessionRoutes.createSessionDetailRoute(sessionId))
-                    },
-                    onCreateSessionClick = {
-                        navController.navigate(SessionRoutes.SESSION_ADD)
-                    },
-                    // ✅ PERBAIKAN DI SINI:
-                    // Menerima parameter 'circleId' dan memasukkannya ke route
-                    onCircleClick = { circleId ->
-                        navController.navigate(DetailRoutes.createCircleDetailRoute(circleId))
-                    },
+                    }
                 )
             }
 
-            // 2. SESSION TAB
             navigation(
                 startDestination = SessionRoutes.SESSION_LIST,
                 route = BottomBarScreen.Session.route
             ){
                 composable(SessionRoutes.SESSION_LIST) {
                     SessionScreen(
-                        onSessionItemClick = { session ->
-                            navController.navigate(SessionRoutes.createSessionDetailRoute(session.id))
+                        onSessionClick = { sessionId ->
+                            navController.navigate(SessionRoutes.createSessionDetailRoute(sessionId))
                         }
                     )
                 }
 
+                // ... detail & shopping list sama ...
                 composable(
                     route = SessionRoutes.SESSION_DETAIL,
                     arguments = listOf(navArgument("sessionId"){type= NavType.StringType})
@@ -99,10 +95,6 @@ fun MainAppNav(
                     )
                 }
 
-                composable(SessionRoutes.SESSION_ADD) {
-                    CreateSessionScreen(onBackClick = { navController.popBackStack() })
-                }
-
                 composable(
                     route = SessionRoutes.SHOPPING_LIST,
                     arguments = listOf(navArgument("sessionId") { type = NavType.StringType })
@@ -113,19 +105,30 @@ fun MainAppNav(
                 }
             }
 
-            // 3. CIRCLE TAB
+            // 2. ADD TAB (Create Session)
+            composable(BottomBarScreen.Add.route) {
+                // Pastikan Manifest sudah ada <queries> biar Maps aman
+                CreateSessionScreens(
+                    onBackClick = {
+                        navController.popBackStack()
+                    },
+                )
+            }
+
+            // 3. CIRCLE TAB (REVISI: Uncomment Callback)
             navigation(
                 startDestination = DetailRoutes.CIRCLE_LIST,
                 route = BottomBarScreen.Circles.route
             ) {
                 composable(DetailRoutes.CIRCLE_LIST) {
                     CircleScreen(
-                        onAddCircleClick = {
-                            navController.navigate(DetailRoutes.CIRCLE_ADD)
-                        },
-                        onCircleItemClick = { circle ->
-                            navController.navigate(DetailRoutes.createCircleDetailRoute(circle.id))
-                        },
+                        // REVISI: Nyalakan kembali navigasi ini
+//                        onAddCircleClick = {
+//                            navController.navigate(DetailRoutes.CIRCLE_ADD)
+//                        },
+//                        onCircleItemClick = { circle ->
+//                            navController.navigate(DetailRoutes.createCircleDetailRoute(circle.id))
+//                        },
                     )
                 }
 
@@ -139,7 +142,6 @@ fun MainAppNav(
                     route = DetailRoutes.CIRCLE_DETAIL,
                     arguments = listOf(navArgument("circleId") { type = NavType.StringType })
                 ) {
-                    // ViewModel CircleDetailViewModel akan otomatis mengambil "circleId"
                     CircleDetailScreen(
                         onBackClick = {
                             navController.popBackStack()
@@ -151,17 +153,21 @@ fun MainAppNav(
                 }
             }
 
-            // 4. PROFILE TAB
+            // 4. PROFILE TAB (REVISI: Uncomment Logout)
             composable(BottomBarScreen.Profile.route) {
                 ProfileScreen(
-                    onLogoutClick = onLogOut,
-                    onCircleClick = {
-                        navController.navigate(BottomBarScreen.Circles.route) {
-                            popUpTo(navController.graph.startDestinationId) { saveState = true }
-                            launchSingleTop = true
-                            restoreState = true
-                        }
-                    }
+                    // REVISI: Nyalakan fungsi Logout
+//                    onLogoutClick = onLogOut,
+
+                    // Jika fitur ini belum siap, boleh dikomentari.
+                    // Tapi Logout wajib nyala.
+//                    onCircleClick = {
+//                        navController.navigate(BottomBarScreen.Circles.route) {
+//                            popUpTo(navController.graph.startDestinationId) { saveState = true }
+//                            launchSingleTop = true
+//                            restoreState = true
+//                        }
+//                    }
                 )
             }
         }

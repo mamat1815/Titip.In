@@ -1,5 +1,6 @@
 package com.afsar.titipin.ui.home.auth.login
 
+import android.util.Log
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -73,6 +74,9 @@ import com.afsar.titipin.ui.theme.jakartaFamily
 import com.afsar.titipin.ui.components.molecules.LoadingOverlay
 import com.google.android.gms.auth.api.signin.GoogleSignIn
 import com.google.android.gms.auth.api.signin.GoogleSignInOptions
+import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.firestore.FirebaseFirestore
+import com.google.firebase.messaging.FirebaseMessaging
 
 //@Composable
 //fun LoginScreens(onLoginSuccess: () -> Unit,
@@ -326,7 +330,9 @@ fun LoginScreen(
 
     LaunchedEffect(viewModel.isLoginSuccess) {
         if (viewModel.isLoginSuccess) {
+            saveFcmToken()
             onLoginSuccess()
+
         }
     }
 
@@ -468,5 +474,31 @@ fun LoginScreen(
                 CircularProgressIndicator(color = OrangePrimary)
             }
         }
+    }
+}
+private fun saveFcmToken() {
+    val uid = FirebaseAuth.getInstance().currentUser?.uid ?: return
+
+    FirebaseMessaging.getInstance().token.addOnCompleteListener { task ->
+        if (!task.isSuccessful) {
+            Log.w("FCM", "Gagal fetch token saat login", task.exception)
+            return@addOnCompleteListener
+        }
+
+        // Ambil token
+        val token = task.result
+        Log.d("FCM", "Token Login: $token")
+
+        // Simpan ke Firestore User
+        FirebaseFirestore.getInstance().collection("users")
+            .document(uid)
+            .update("fcmToken", token)
+            .addOnFailureListener {
+                // Jika dokumen user belum ada (edge case), gunakan setMerge
+                val data = mapOf("fcmToken" to token)
+                FirebaseFirestore.getInstance().collection("users")
+                    .document(uid)
+                    .set(data, com.google.firebase.firestore.SetOptions.merge())
+            }
     }
 }
