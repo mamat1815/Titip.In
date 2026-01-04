@@ -9,31 +9,63 @@ import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.offset
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.ArrowDropDown
-import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Dehaze
-import androidx.compose.material.icons.filled.Description
 import androidx.compose.material.icons.filled.Group
 import androidx.compose.material.icons.filled.LocationOn
-import androidx.compose.material.icons.filled.MyLocation
 import androidx.compose.material.icons.filled.RadioButtonChecked
 import androidx.compose.material.icons.filled.RadioButtonUnchecked
 import androidx.compose.material.icons.filled.Search
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.Divider
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.OutlinedTextFieldDefaults
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Slider
+import androidx.compose.material3.SliderDefaults
+import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextField
+import androidx.compose.material3.TextFieldDefaults
+import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.TopAppBarDefaults
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
@@ -48,18 +80,15 @@ import com.afsar.titipin.ui.components.molecules.SessionProgressBar
 import com.afsar.titipin.ui.session.LocationPickerDialog
 import com.afsar.titipin.ui.theme.OrangePrimary
 import com.afsar.titipin.ui.theme.OrangeSecondary
-import com.afsar.titipin.ui.theme.TextPrimary
 import com.google.android.gms.maps.model.CameraPosition
 import com.google.android.gms.maps.model.LatLng
 import com.google.maps.android.compose.GoogleMap
 import com.google.maps.android.compose.MapUiSettings
 import com.google.maps.android.compose.Marker
-import com.google.maps.android.compose.MarkerState
 import com.google.maps.android.compose.rememberCameraPositionState
 import com.google.maps.android.compose.rememberMarkerState
 import kotlin.math.roundToInt
 
-// --- UI COMPOSABLE UTAMA ---
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun CreateSessionScreens(
@@ -71,13 +100,12 @@ fun CreateSessionScreens(
     var showMapDialog by remember { mutableStateOf(false) }
     LaunchedEffect(Unit) {
         if (ContextCompat.checkSelfPermission(context, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
-            // Hanya fetch jika belum ada lokasi terpilih
             if (viewModel.selectedLatLng == null) {
                 viewModel.fetchCurrentLocation(context)
             }
         }
     }
-    // --- LOGIC PERMISSION & LOCATION ---
+
     val locationPermissionLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.RequestMultiplePermissions()
     ) { permissions ->
@@ -88,10 +116,8 @@ fun CreateSessionScreens(
         }
     }
 
-    // --- DIALOG MAP ---
     if (showMapDialog) {
         LocationPickerDialog(
-            // Kirim lokasi saat ini ke Dialog agar start-nya dari situ
             initialLocation = viewModel.selectedLatLng,
             onDismiss = { showMapDialog = false },
             onLocationSelected = { latLng ->
@@ -101,10 +127,9 @@ fun CreateSessionScreens(
         )
     }
 
-    // --- SUCCESS HANDLER ---
     LaunchedEffect(viewModel.isSuccess) {
         if (viewModel.isSuccess) {
-            onBackClick() // Kembali ke Home setelah sukses
+            onBackClick()
         }
     }
 
@@ -121,7 +146,6 @@ fun CreateSessionScreens(
             )
         },
         bottomBar = {
-            // Tombol Buat Sesi (Fixed di Bawah)
             Surface(shadowElevation = 8.dp) {
                 Button(
                     onClick = { viewModel.createSession() },
@@ -145,7 +169,7 @@ fun CreateSessionScreens(
                 }
             }
         },
-        containerColor = Color(0xFFF9FAFB) // Background Abu Muda
+        containerColor = Color(0xFFF9FAFB)
     ) { innerPadding ->
 
         Column(
@@ -156,16 +180,19 @@ fun CreateSessionScreens(
         ) {
 
 
-            Spacer(modifier = Modifier.height(16.dp)) // Jarak dikit dari atas
+            Spacer(modifier = Modifier.height(16.dp))
 
             SessionProgressBar(
-                currentStep = 1, // Karena ini baru buat, berarti Step 1
+                currentStep = 1,
                 instructionText = "Lengkapi detail sesi titipanmu agar temanmu bisa mulai menitip!",
-                iconRes = R.drawable.ic_sesi, // Pastikan icon ini ada, atau ganti icon lain
-                modifier = Modifier.padding(bottom = 16.dp)
+                iconRes = R.drawable.ic_sesi,
+                modifier = Modifier.padding(
+                    bottom = 16.dp,
+                    start = 16.dp,
+                    end = 16.dp
+                    )
             )
 
-            // ERROR MESSAGE
             if (viewModel.errorMessage != null) {
                 Card(
                     colors = CardDefaults.cardColors(containerColor = Color(0xFFFFEBEE)),
@@ -180,7 +207,6 @@ fun CreateSessionScreens(
                 }
             }
 
-            // 1. SEKSI MAPS & INPUT JUDUL (Menggunakan gaya lama)
             MapSection(
                 locationName = viewModel.locationName,
                 onLocationNameChange = { viewModel.locationName = it },
@@ -189,7 +215,6 @@ fun CreateSessionScreens(
                 description = viewModel.description,
                 onDescriptionChange = { viewModel.description = it },
 
-                // PARAMETER BARU: Kirim koordinat ke Preview
                 currentLatLng = viewModel.selectedLatLng,
 
                 onMyLocationClick = {
@@ -203,7 +228,6 @@ fun CreateSessionScreens(
                 isLocationLoading = viewModel.isLoading
             )
 
-            // 2. KATEGORI (Menggunakan gaya lama)
             Spacer(modifier = Modifier.height(12.dp))
             CategorySelectorSection(
                 selectedCategory = viewModel.category,
@@ -212,9 +236,8 @@ fun CreateSessionScreens(
 
             Divider(thickness = 8.dp, color = Color(0xFFF0F0F0), modifier = Modifier.padding(vertical = 16.dp))
 
-            // 3. SLIDER DURASI & MAKSIMAL (Menggunakan gaya lama)
             SettingSection(
-                duration = viewModel.selectedDuration.toFloat(), // Konversi Int ke Float untuk Slider
+                duration = viewModel.selectedDuration,
                 onDurationChange = { viewModel.selectedDuration = it },
                 maxTitip = viewModel.maxTitip.toFloat(),
                 onMaxTitipChange = { viewModel.maxTitip = it }
@@ -222,22 +245,19 @@ fun CreateSessionScreens(
 
             Divider(thickness = 8.dp, color = Color(0xFFF0F0F0))
 
-            // 4. CIRCLE SELECTOR (Logic baru, UI lama)
             CircleSelectorSectionNew(
-                circles = viewModel.getFilteredCircles(), // Ambil data circle yang sudah terfilter
+                circles = viewModel.getFilteredCircles(),
                 searchQuery = viewModel.searchQuery,
                 onSearchQueryChange = { viewModel.searchQuery = it },
                 selectedCircleId = viewModel.selectedCircle?.id,
                 onCircleSelected = { circle -> viewModel.selectedCircle = circle }
             )
 
-            // Spacer bawah agar konten tidak tertutup tombol
             Spacer(modifier = Modifier.height(100.dp))
         }
     }
 }
 
-// ======================= KOMPONEN UI LAMA YANG DIADAPTASI =======================
 @Composable
 fun MapSection(
     locationName: String,
@@ -246,7 +266,7 @@ fun MapSection(
     onTitleChange: (String) -> Unit,
     description: String,
     onDescriptionChange: (String) -> Unit,
-    currentLatLng: LatLng?, // Parameter baru untuk koordinat saat ini
+    currentLatLng: LatLng?,
     onMyLocationClick: () -> Unit,
     onMapAreaClick: () -> Unit,
     isLocationLoading: Boolean
@@ -255,7 +275,6 @@ fun MapSection(
         Text("Detail Lokasi & Sesi", fontWeight = FontWeight.SemiBold, fontSize = 14.sp)
         Spacer(modifier = Modifier.height(8.dp))
 
-        // Input Judul
         OutlinedTextField(
             value = title,
             onValueChange = onTitleChange,
@@ -270,7 +289,6 @@ fun MapSection(
             )
         )
 
-        // Input Nama Lokasi (Text)
         Surface(
             shape = RoundedCornerShape(topStart = 16.dp, topEnd = 16.dp, bottomStart = 0.dp, bottomEnd = 0.dp),
             border = BorderStroke(1.dp, Color.LightGray),
@@ -303,12 +321,10 @@ fun MapSection(
             )
         }
 
-        // --- MAP PREVIEW (UPDATED) ---
-        // Menampilkan Peta Mini Interaktif (tapi di-disable scrollnya biar ga ganggu scroll halaman)
         Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .height(180.dp) // Sedikit lebih tinggi biar enak dilihat
+                .height(180.dp)
                 .offset(y = (-1).dp)
                 .clip(RoundedCornerShape(bottomStart = 16.dp, bottomEnd = 16.dp))
                 .border(1.dp, Color.LightGray, RoundedCornerShape(bottomStart = 16.dp, bottomEnd = 16.dp))
@@ -318,7 +334,6 @@ fun MapSection(
                     position = CameraPosition.fromLatLngZoom(currentLatLng, 15f)
                 }
 
-                // Update kamera jika currentLatLng berubah (misal setelah pilih dari dialog/GPS)
                 LaunchedEffect(currentLatLng) {
                     cameraPositionState.position = CameraPosition.fromLatLngZoom(currentLatLng, 15f)
                 }
@@ -328,16 +343,14 @@ fun MapSection(
                     cameraPositionState = cameraPositionState,
                     uiSettings = MapUiSettings(
                         zoomControlsEnabled = false,
-                        scrollGesturesEnabled = false, // Disable geser map di preview agar tidak konflik scroll layar
+                        scrollGesturesEnabled = false,
                         zoomGesturesEnabled = false,
                         rotationGesturesEnabled = false,
                         tiltGesturesEnabled = false
                     )
                 ) {
-                    // 1. Gunakan rememberMarkerState agar state disimpan dan tidak dibuat ulang terus menerus
                     val markerState = rememberMarkerState(position = currentLatLng)
 
-                    // 2. Pastikan posisi marker ikut berubah jika currentLatLng berubah (misal dari GPS/Dialog)
                     LaunchedEffect(currentLatLng) {
                         markerState.position = currentLatLng
                     }
@@ -347,7 +360,6 @@ fun MapSection(
                     )
                 }
             } else {
-                // Tampilan Placeholder jika belum ada lokasi (Kotak Abu-abu Lama)
                 Box(
                     modifier = Modifier.fillMaxSize().background(Color(0xFFEEEEEE)),
                     contentAlignment = Alignment.Center
@@ -359,13 +371,11 @@ fun MapSection(
                 }
             }
 
-            // Overlay Transparan agar bisa diklik untuk membuka Dialog Full Screen
             Box(
                 modifier = Modifier
                     .fillMaxSize()
                     .clickable { onMapAreaClick() }
             ) {
-                // Label kecil "Ketuk untuk ubah"
                 Surface(
                     modifier = Modifier.align(Alignment.BottomCenter).padding(8.dp),
                     color = Color.Black.copy(alpha = 0.6f),
@@ -383,7 +393,6 @@ fun MapSection(
 
         Spacer(modifier = Modifier.height(12.dp))
 
-        // Input Deskripsi (Tetap Sama)
         OutlinedTextField(
             value = description,
             onValueChange = onDescriptionChange,
@@ -408,7 +417,6 @@ fun CategorySelectorSection(
     selectedCategory: Category,
     onCategorySelected: (Category) -> Unit
 ) {
-    // Mapping Icon Resource (Sesuaikan dengan drawable kamu)
     fun getIcon(cat: Category): Int {
         return when(cat) {
             Category.FOOD -> R.drawable.ic_makanan
@@ -417,7 +425,6 @@ fun CategorySelectorSection(
         }
     }
 
-    // Mapping Nama untuk UI
     fun getName(cat: Category): String {
         return when(cat) {
             Category.FOOD -> "Makanan"
@@ -495,7 +502,6 @@ fun SettingSection(
     onMaxTitipChange: (Float) -> Unit
 ) {
     Column(modifier = Modifier.padding(16.dp)) {
-        // --- SLIDER DURASI ---
         Row(horizontalArrangement = Arrangement.SpaceBetween, modifier = Modifier.fillMaxWidth()) {
             Text("Durasi Menunggu", fontWeight = FontWeight.SemiBold, fontSize = 14.sp)
             Row(verticalAlignment = Alignment.CenterVertically) {
@@ -511,8 +517,8 @@ fun SettingSection(
         Slider(
             value = duration,
             onValueChange = onDurationChange,
-            valueRange = 5f..60f, // Range diubah jadi 5 - 60 menit biar masuk akal
-            steps = 10, // Biar loncat per 5 menit
+            valueRange = 5f..60f,
+            steps = 10,
             colors = SliderDefaults.colors(thumbColor = Color.White, activeTrackColor = OrangePrimary)
         )
         Row(horizontalArrangement = Arrangement.SpaceBetween, modifier = Modifier.fillMaxWidth()) {
@@ -522,7 +528,6 @@ fun SettingSection(
 
         Spacer(modifier = Modifier.height(24.dp))
 
-        // --- SLIDER MAX TITIP ---
         Row(horizontalArrangement = Arrangement.SpaceBetween, modifier = Modifier.fillMaxWidth()) {
             Text("Maksimal Penitip", fontWeight = FontWeight.SemiBold, fontSize = 14.sp)
             Row(verticalAlignment = Alignment.CenterVertically) {
@@ -557,7 +562,6 @@ fun CircleSelectorSectionNew(
         Text("Bagikan Ke Circle", fontWeight = FontWeight.SemiBold, fontSize = 14.sp)
         Spacer(modifier = Modifier.height(12.dp))
 
-        // Search Bar Circle
         OutlinedTextField(
             value = searchQuery,
             onValueChange = onSearchQueryChange,
@@ -581,7 +585,6 @@ fun CircleSelectorSectionNew(
             Text("Tidak ada circle ditemukan.", fontSize = 12.sp, color = Color.Gray, modifier = Modifier.padding(8.dp))
         }
 
-        // List Circle
         circles.forEach { circle ->
             val isSelected = selectedCircleId == circle.id
 
@@ -598,7 +601,6 @@ fun CircleSelectorSectionNew(
                     modifier = Modifier.padding(12.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    // Avatar Circle (Placeholder kalau tidak ada gambar)
                     Box(
                         modifier = Modifier.size(40.dp).clip(CircleShape).background(Color(0xFFFFF3E0)),
                         contentAlignment = Alignment.Center
@@ -613,7 +615,6 @@ fun CircleSelectorSectionNew(
                         Text("${circle.memberIds.size} anggota", fontSize = 12.sp, color = Color.Gray)
                     }
 
-                    // Radio Button Style Checkbox
                     Icon(
                         imageVector = if (isSelected) Icons.Default.RadioButtonChecked else Icons.Default.RadioButtonUnchecked,
                         contentDescription = null,
