@@ -36,12 +36,20 @@ object DetailRoutes {
     const val CIRCLE_DETAIL = "circle_detail/{circleId}"
     fun createCircleDetailRoute(id: String) = "circle_detail/$id"
 }
-
+object ProfileRoutes {
+    const val EDIT_PROFILE = "edit_profile_screen"
+    const val PAYMENT_OPTION = "payment_option_screen"
+}
 object SessionRoutes {
     const val SESSION_LIST = "session_list_screen"
     const val SESSION_DETAIL = "session_detail/{sessionId}"
     const val SESSION_ADD = "session_add_screen"
     const val SHOPPING_LIST = "session_shopping_list/{sessionId}"
+
+    // --- TAMBAHAN BARU ---
+    const val PAYMENT_DETAIL = "payment_detail/{sessionId}"
+    fun createPaymentRoute(id: String) = "payment_detail/$id"
+    // ---------------------
 
     fun createSessionDetailRoute(id: String) = "session_detail/$id"
     fun createShoppingListRoute(id: String) = "session_shopping_list/$id"

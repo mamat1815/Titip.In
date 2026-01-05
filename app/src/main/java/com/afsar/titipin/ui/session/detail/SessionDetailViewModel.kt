@@ -38,22 +38,19 @@ class SessionDetailViewModel @Inject constructor(
     savedStateHandle: SavedStateHandle
 ) : ViewModel() {
 
-    // Ambil ID dari Navigasi
     val sessionId: String = checkNotNull(savedStateHandle["sessionId"])
 
+    var orderDeliveryLocation by mutableStateOf("")
     // --- STATE DATA ---
     var sessionState by mutableStateOf<Session?>(null)
     var orders by mutableStateOf<List<Order>>(emptyList())
 
-    // User Info
     var currentUserId by mutableStateOf("")
     var currentUser by mutableStateOf<User?>(null)
 
-    // Chat & Payment Data
     var chatMessages = mutableStateListOf<ChatMessage>()
     private var sessionPayments = mutableStateListOf<PaymentInfo>()
 
-    // --- FORM INPUT ---
     var chatInput by mutableStateOf("")
     var orderItemName by mutableStateOf("")
     var orderQuantity by mutableIntStateOf(1)
@@ -61,7 +58,6 @@ class SessionDetailViewModel @Inject constructor(
     var orderNotes by mutableStateOf("")
     var orderTip by mutableStateOf("")
 
-    // --- STATUS & TIMER ---
     var timeString by mutableStateOf("Loading...")
     var isRevisionPhase by mutableStateOf(false)
     var isLoading by mutableStateOf(false)
@@ -110,7 +106,7 @@ class SessionDetailViewModel @Inject constructor(
                     startTimer(session)
                     loadOrdersAndChat(session.id)
                     listenToPayments(session.id)
-                    checkDisbursementStatus(session.id)
+//                    checkDisbursementStatus(session.id)
                 }.onFailure {
                     errorMessage = "Gagal memuat sesi: ${it.message}"
                 }
@@ -119,24 +115,24 @@ class SessionDetailViewModel @Inject constructor(
         }
     }
 
-    private fun checkDisbursementStatus(sessionId: String) {
-        viewModelScope.launch {
-            paymentRepository.getDisbursementBySession(sessionId).collect { result ->
-                result.onSuccess { data ->
-                    existingDisbursement = data
-
-                    // Jika sudah ada data pencairan, update status UI
-                    if (data != null) {
-                        disbursementStatus = if(data.status == "completed") "success" else data.status
-                        disbursementMessage = "Dana sudah dicairkan pada: ${data.requestedAt}"
-                    }
-
-                    // Hitung ulang validasi tombol
-                    calculateTotals()
-                }
-            }
-        }
-    }
+//    private fun checkDisbursementStatus(sessionId: String) {
+//        viewModelScope.launch {
+//            paymentRepository.getDisbursementBySession(sessionId).collect { result ->
+//                result.onSuccess { data ->
+//                    existingDisbursement = data
+//
+//                    // Jika sudah ada data pencairan, update status UI
+//                    if (data != null) {
+//                        disbursementStatus = if(data.status == "completed") "success" else data.status
+//                        disbursementMessage = "Dana sudah dicairkan pada: ${data.requestedAt}"
+//                    }
+//
+//                    // Hitung ulang validasi tombol
+//                    calculateTotals()
+//                }
+//            }
+//        }
+//    }
 
     private fun loadOrdersAndChat(sessionId: String) {
         // Load Orders
@@ -144,8 +140,7 @@ class SessionDetailViewModel @Inject constructor(
             orderRepository.getOrdersBySession(sessionId).collect { result ->
                 result.onSuccess { list ->
                     orders = list
-                    // Hitung total setiap kali data order baru masuk
-                    calculateTotals()
+//                    calculateTotals()
                 }.onFailure {
                     Log.e("SessionVM", "Error load orders: ${it.message}")
                 }
@@ -191,60 +186,51 @@ class SessionDetailViewModel @Inject constructor(
 
     val canIPay by derivedStateOf { myGrandTotal > 0.0 && myPaymentStatus != "success" }
 
-    // HITUNGAN HOST
     var totalCollectedGoodsPrice by mutableDoubleStateOf(0.0)
     var netDisbursementAmount by mutableDoubleStateOf(0.0)
     var canDisburse by mutableStateOf(false)
 
-    // Fungsi Sentral untuk Menghitung Ulang Semua Angka Keuangan
-    private fun calculateTotals() {
-        // 1. Hitungan Guest (Saya)
-        val myValidOrders = orders.filter {
-            it.requesterId == currentUserId && (it.status == "accepted" || it.status == "bought")
-        }
-        myTotalGoodsPrice = myValidOrders.sumOf { order ->
-            order.items.sumOf { it.priceEstimate * it.quantity }
-        }
-        myTotalJastipFee = myValidOrders.sumOf { it.jastipFee }
-
-        // 2. Hitungan Host (Pencairan)
-        val paidUserIds = sessionPayments
-            .filter { it.status == "success" }
-            .map { it.userId }
-
-        val paidOrders = orders.filter { it.requesterId in paidUserIds }
-
-        // Total yang bisa dicairkan = (Harga Barang + Jastip Fee) dari user yang LUNAS
-        val totalCollected = paidOrders.sumOf { order ->
-            val itemsTotal = order.items.sumOf { it.priceEstimate * it.quantity }
-            itemsTotal + order.jastipFee
-        }
-
-        totalCollectedGoodsPrice = totalCollected
-        netDisbursementAmount = if (totalCollected > 0) maxOf(0.0, totalCollected - DISBURSEMENT_FEE) else 0.0
-
-        val session = sessionState
-        val isCreator = session?.creatorId == currentUserId
-        val isClosed = session?.status == "closed"
-//        canDisburse = isCreator && isClosed && netDisbursementAmount > 0.0
-        canDisburse = isCreator && isClosed && netDisbursementAmount > 0.0 && existingDisbursement == null
-    }
+//    // Fungsi Sentral untuk Menghitung Ulang Semua Angka Keuangan
+//    private fun calculateTotals() {
+//        val myValidOrders = orders.filter {
+//            it.requesterId == currentUserId && (it.status == "accepted" || it.status == "bought")
+//        }
+//        myTotalGoodsPrice = myValidOrders.sumOf { order ->
+//            order.items.sumOf { it.priceEstimate * it.quantity }
+//        }
+//        myTotalJastipFee = myValidOrders.sumOf { it.jastipFee }
+//
+//        val paidUserIds = sessionPayments
+//            .filter { it.status == "success" }
+//            .map { it.userId }
+//
+//        val paidOrders = orders.filter { it.requesterId in paidUserIds }
+//
+//        // Total yang bisa dicairkan = (Harga Barang + Jastip Fee) dari user yang LUNAS
+//        val totalCollected = paidOrders.sumOf { order ->
+//            val itemsTotal = order.items.sumOf { it.priceEstimate * it.quantity }
+//            itemsTotal + order.jastipFee
+//        }
+//
+//        totalCollectedGoodsPrice = totalCollected
+//        netDisbursementAmount = if (totalCollected > 0) maxOf(0.0, totalCollected - DISBURSEMENT_FEE) else 0.0
+//
+//        val session = sessionState
+//        val isCreator = session?.creatorId == currentUserId
+//        val isClosed = session?.status == "closed"
+//        canDisburse = isCreator && isClosed && netDisbursementAmount > 0.0 && existingDisbursement == null
+//    }
 
 
-    // ==========================================
-    // --- ACTIONS: UPDATE PRICE & ITEMS ---
-    // ==========================================
 
     fun updateItemPrice(orderId: String, itemIndex: Int, newPrice: Double) {
         viewModelScope.launch {
             val targetOrder = orders.find { it.id == orderId } ?: return@launch
 
-            // Edit item di memory
             val updatedItems = targetOrder.items.toMutableList()
             val oldItem = updatedItems[itemIndex]
             updatedItems[itemIndex] = oldItem.copy(priceEstimate = newPrice)
 
-            // Kirim ke Firestore (Pakai fungsi baru di Repo)
             orderRepository.updateOrderItems(orderId, updatedItems).collect { result ->
                 result.onSuccess {
                     // Update Local List & Recalculate
@@ -258,38 +244,31 @@ class SessionDetailViewModel @Inject constructor(
         }
     }
 
-    // Toggle Checklist Item (Di Shopping List)
     fun toggleItemStatus(order: Order, itemIndex: Int) {
         val currentItem = order.items[itemIndex]
         val newStatus = if (currentItem.status == "bought") "pending" else "bought"
         updateItemStatusInOrder(order, itemIndex, newStatus)
     }
 
-    // Tandai Item Revisi
     fun flagItemRevision(order: Order, itemIndex: Int) {
         updateItemStatusInOrder(order, itemIndex, "revision")
     }
 
-    // Helper Update Item Status
     private fun updateItemStatusInOrder(order: Order, itemIndex: Int, newStatus: String) {
         val updatedItems = order.items.toMutableList()
         updatedItems[itemIndex] = updatedItems[itemIndex].copy(status = newStatus)
 
-        // Cek apakah semua item sudah dibeli? Jika ya, update status Order Induk
         val allBought = updatedItems.all { it.status == "bought" }
         val newOrderStatus = if (allBought) "bought" else "accepted"
 
         viewModelScope.launch {
-            // 1. Update Items dulu (status per barang)
             orderRepository.updateOrderItems(order.id, updatedItems).collect { res ->
                 res.onSuccess {
-                    // 2. Jika sukses, update juga status Order Induk (jika berubah)
                     if (order.status != newOrderStatus) {
                         orderRepository.updateOrderStatus(order.circleId, order.sessionId, order.id, newOrderStatus).collect{}
                     }
 
-                    // 3. Update UI Local
-                    // Kita update status order induk juga di memory biar UI checklist hijau
+
                     val updatedOrder = order.copy(items = updatedItems, status = newOrderStatus)
 
                     val index = orders.indexOfFirst { it.id == order.id }
@@ -297,21 +276,19 @@ class SessionDetailViewModel @Inject constructor(
                         val newList = orders.toMutableList()
                         newList[index] = updatedOrder
                         orders = newList
-                        calculateTotals()
+//                        calculateTotals()
                     }
                 }
             }
         }
     }
 
-    // Helper untuk update list local agar UI responsif tanpa fetch ulang
     private fun updateLocalOrderList(orderId: String, newItems: List<OrderItem>) {
         val index = orders.indexOfFirst { it.id == orderId }
         if (index != -1) {
             val oldOrder = orders[index]
             val updatedOrder = oldOrder.copy(items = newItems)
 
-            // Hitung ulang total estimate di order object (untuk konsistensi)
             val newTotal = newItems.sumOf { it.priceEstimate * it.quantity }
             val finalOrder = updatedOrder.copy(totalEstimate = newTotal)
 
@@ -319,13 +296,10 @@ class SessionDetailViewModel @Inject constructor(
             newList[index] = finalOrder
             orders = newList
 
-            calculateTotals() // Hitung ulang duit
+//            calculateTotals() // Hitung ulang duit
         }
     }
 
-    // ==========================================
-    // --- ACTIONS: CREATE ORDER ---
-    // ==========================================
     fun createOrder(onSuccess: () -> Unit) {
         val session = sessionState ?: return
         val user = currentUser
@@ -373,7 +347,6 @@ class SessionDetailViewModel @Inject constructor(
         }
     }
 
-    // Update Status Order Induk (Terima/Tolak di Awal)
     fun updateOrderStatus(orderId: String, status: String) {
         val session = sessionState ?: return
         viewModelScope.launch {
@@ -381,9 +354,6 @@ class SessionDetailViewModel @Inject constructor(
         }
     }
 
-    // ==========================================
-    // --- ACTIONS: SESSION FLOW ---
-    // ==========================================
     fun startShopping(onSuccess: () -> Unit) {
         val session = sessionState ?: return
         isLoading = true
@@ -403,9 +373,24 @@ class SessionDetailViewModel @Inject constructor(
         }
     }
 
-    // ==========================================
-    // --- ACTIONS: DISBURSEMENT ---
-    // ==========================================
+    fun resetOrderForm() {
+        orderItemName = ""
+        orderQuantity = 1
+        orderPriceEstimate = ""
+        orderNotes = ""
+        orderDeliveryLocation = "" // Reset alamat
+    }
+
+    fun getRemainingTimeInSeconds(session: Session): Long {
+        if (session.createdAt == null) return 0L
+        val startTime = session.createdAt.toDate().time
+        val durationMillis = session.durationMinutes * 60 * 1000L
+        val endTime = startTime + durationMillis
+        val now = System.currentTimeMillis()
+        val remainingMillis = endTime - now
+        return if (remainingMillis > 0) remainingMillis / 1000 else 0L
+    }
+
     fun requestDisbursement() {
         val session = sessionState ?: return
         val bank = currentUser?.bank
@@ -434,10 +419,6 @@ class SessionDetailViewModel @Inject constructor(
             }
         }
     }
-
-    fun retryDisbursement() { requestDisbursement() }
-
-    // Chat
     fun sendChat() {
         val session = sessionState ?: return
         if (chatInput.isNotBlank()) {
@@ -454,7 +435,7 @@ class SessionDetailViewModel @Inject constructor(
                 result.onSuccess { list ->
                     sessionPayments.clear()
                     sessionPayments.addAll(list)
-                    calculateTotals() // Update disbursement info if new payments arrive
+//                    calculateTotals() // Update disbursement info if new payments arrive
                 }
             }
         }
@@ -478,20 +459,7 @@ class SessionDetailViewModel @Inject constructor(
         }
     }
 
-    // ==========================================
-    // --- UI HELPERS ---
-    // ==========================================
-    val totalItems by derivedStateOf {
-        orders.filter { it.status == "accepted" || it.status == "bought" }
-            .flatMap { it.items }.sumOf { it.quantity }
-    }
 
-    val totalPrice by derivedStateOf {
-        orders.filter { it.status == "accepted" || it.status == "bought" }
-            .sumOf { it.totalEstimate }
-    }
-
-    // Host Tab Logic
     var selectedTabIndex by mutableIntStateOf(0)
     val pendingCount by derivedStateOf { orders.count { it.status == "pending" } }
     val acceptedCount by derivedStateOf { orders.count { it.status == "accepted" || it.status == "bought" } }
@@ -509,5 +477,4 @@ class SessionDetailViewModel @Inject constructor(
     val isReadyToShop by derivedStateOf { acceptedCount > 0 }
 
     fun clearMessage() { uiMessage = null }
-    fun clearDisbursementMessage() { disbursementMessage = null }
 }

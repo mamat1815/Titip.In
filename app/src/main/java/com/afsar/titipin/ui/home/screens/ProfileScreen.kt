@@ -29,21 +29,28 @@ import com.afsar.titipin.ui.theme.TextPrimary
 
 @Composable
 fun ProfileScreen(
-//    onLogoutClick: () -> Unit, // Callback untuk navigasi logout
-//    onCircleClick: () -> Unit, // Callback jika mau ke menu circle
+    onEditProfileClick: () -> Unit,      // Navigasi ke Edit Profil
+    onPaymentOptionClick: () -> Unit,    // Navigasi ke Input Bank
+    onCircleClick: () -> Unit,           // Navigasi ke List Circle
+    onLogoutClick: () -> Unit,           // Navigasi Logout (ke Login Screen)
     viewModel: ProfileViewModel = hiltViewModel()
 ) {
     val user = viewModel.currentUser
     val isLoading = viewModel.isLoading
-    val BgColor = Color(0xFFF9FAFB)
+    val bgColor = Color(0xFFF9FAFB)
 
-    Box(modifier = Modifier.fillMaxSize().background(BgColor)) {
+    // REFRESH DATA SAAT HALAMAN DIBUKA (Penting setelah edit profil/bank)
+    LaunchedEffect(Unit) {
+        viewModel.fetchUserProfile()
+    }
 
-        // 1. TAMPILKAN LOADING JIKA SEDANG MEMUAT
-        if (isLoading) {
-            CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
+    Box(modifier = Modifier.fillMaxSize().background(bgColor)) {
+
+        // 1. TAMPILKAN LOADING
+        if (isLoading && user == null) {
+            CircularProgressIndicator(modifier = Modifier.align(Alignment.Center), color = OrangePrimary)
         }
-        // 2. CEK APAKAH USER NULL
+        // 2. TAMPILKAN KONTEN
         else if (user != null) {
             Column(modifier = Modifier.fillMaxSize()) {
 
@@ -67,28 +74,42 @@ fun ProfileScreen(
                 ) {
                     Spacer(modifier = Modifier.height(24.dp))
 
-                    // === CARD UTAMA ===
+                    // === CARD UTAMA (INFO USER & STATS) ===
                     Box(modifier = Modifier.fillMaxWidth().padding(top = 40.dp)) {
 
-                        // Kotak Putih di Bawah
+                        // Kotak Putih Dasar
                         Surface(
                             shape = RoundedCornerShape(24.dp),
                             color = Color.White,
                             border = BorderStroke(1.dp, Color(0xFFEEEEEE)),
-                            modifier = Modifier.fillMaxWidth().padding(top = 40.dp)
+                            modifier = Modifier.fillMaxWidth().padding(top = 40.dp),
+                            shadowElevation = 4.dp
                         ) {
                             Column(
                                 horizontalAlignment = Alignment.CenterHorizontally,
                                 modifier = Modifier.padding(top = 60.dp, bottom = 24.dp, start = 16.dp, end = 16.dp)
                             ) {
-                                // Safe call untuk String
-                                Text(user.name.ifEmpty { "Tanpa Nama" }, fontWeight = FontWeight.Bold, fontSize = 18.sp)
-                                Text("@${user.username}", color = Color.Gray, fontSize = 14.sp)
+                                // Nama & Username
+                                Text(
+                                    text = user.name.ifEmpty { "Tanpa Nama" },
+                                    fontWeight = FontWeight.Bold,
+                                    fontSize = 18.sp,
+                                    color = TextPrimary
+                                )
+                                Text(
+                                    text = if (user.username.isNotEmpty()) "@${user.username}" else user.email,
+                                    color = Color.Gray,
+                                    fontSize = 14.sp
+                                )
 
                                 Spacer(modifier = Modifier.height(24.dp))
 
-                                // Stats Row (HINDARI !! GANTI DENGAN ?:)
-                                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceAround) {
+                                // --- STATISTIK ROW (Titip, Sesi, Circle) ---
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.SpaceAround
+                                ) {
+                                    // Mengambil data dari user.stats (Model baru)
                                     StatItem(user.stats?.totalTitip ?: 0, "Total titip", Icons.Default.ShoppingBag)
                                     StatItem(user.stats?.totalSesi ?: 0, "Total sesi", Icons.Default.ShoppingCart)
                                     StatItem(user.stats?.totalCircle ?: 0, "Total circle", Icons.Default.SupervisedUserCircle)
@@ -96,89 +117,139 @@ fun ProfileScreen(
 
                                 Spacer(modifier = Modifier.height(24.dp))
 
-                                // Wallet Info (HINDARI !! GANTI DENGAN ?:)
+                                // --- INFO KEUANGAN (Pemasukan & Pengeluaran) ---
                                 Surface(
                                     shape = RoundedCornerShape(12.dp),
-                                    border = BorderStroke(1.dp, Color(0xFFEEEEEE)),
-                                    color = Color.White,
+                                    border = BorderStroke(1.dp, Color(0xFFF5F5F5)),
+                                    color = Color(0xFFFAFAFA),
                                     modifier = Modifier.fillMaxWidth()
                                 ) {
-                                    Row(modifier = Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
+                                    Row(
+                                        modifier = Modifier.padding(16.dp),
+                                        verticalAlignment = Alignment.CenterVertically
+                                    ) {
+                                        // Pemasukan (Income)
                                         Column(modifier = Modifier.weight(1f)) {
-                                            Text("Pemasukan", fontSize = 10.sp, color = Color.Gray)
-                                            Text(user.wallet?.income ?: "Rp 0", fontWeight = FontWeight.Bold, fontSize = 14.sp)
+                                            Text("Pemasukan", fontSize = 11.sp, color = Color.Gray)
+                                            Text(
+                                                text = viewModel.formatRupiah(user.stats?.totalIncome ?: 0.0),
+                                                fontWeight = FontWeight.Bold,
+                                                fontSize = 14.sp,
+                                                color = Color(0xFF2E7D32) // Hijau
+                                            )
                                         }
-                                        Divider(modifier = Modifier.height(30.dp).width(1.dp))
+
+                                        // Garis Pemisah Vertical
+                                        Divider(
+                                            modifier = Modifier
+                                                .height(30.dp)
+                                                .width(1.dp),
+                                            color = Color.LightGray
+                                        )
                                         Spacer(modifier = Modifier.width(16.dp))
+
+                                        // Pengeluaran (Expense)
                                         Column(modifier = Modifier.weight(1f)) {
-                                            Text("Pengeluaran", fontSize = 10.sp, color = Color.Gray)
-                                            Text(user.wallet?.expense ?: "Rp 0", fontWeight = FontWeight.Bold, fontSize = 14.sp)
+                                            Text("Pengeluaran", fontSize = 11.sp, color = Color.Gray)
+                                            Text(
+                                                text = viewModel.formatRupiah(user.stats?.totalExpense ?: 0.0),
+                                                fontWeight = FontWeight.Bold,
+                                                fontSize = 14.sp,
+                                                color = Color(0xFFC62828) // Merah
+                                            )
                                         }
                                     }
                                 }
                             }
                         }
 
-                        // Avatar
+                        // --- FOTO PROFIL (Mengambang di atas) ---
                         CirclesImage(
                             imageUrl = user.photoUrl,
                             modifier = Modifier
                                 .size(90.dp)
                                 .align(Alignment.TopCenter)
+                                .clip(CircleShape)
                                 .border(4.dp, Color.White, CircleShape)
+                                .background(Color.LightGray)
                         )
 
-                        // Edit Icon
-                        Icon(
-                            imageVector = Icons.Default.Edit,
-                            contentDescription = "Edit",
-                            tint = OrangePrimary,
+                        // --- TOMBOL EDIT (Icon Pensil) ---
+                        Box(
                             modifier = Modifier
                                 .align(Alignment.TopEnd)
-                                .padding(top = 56.dp, end = 16.dp)
-                                .clickable {
-                                    // Handle Edit Profile Navigation
-                                }
-                        )
+                                .padding(top = 50.dp, end = 20.dp)
+                                .size(36.dp)
+                                .background(Color.White, CircleShape)
+                                .border(1.dp, Color(0xFFEEEEEE), CircleShape)
+                                .clickable { onEditProfileClick() }, // Navigasi ke Edit
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Edit,
+                                contentDescription = "Edit Profil",
+                                tint = OrangePrimary,
+                                modifier = Modifier.size(20.dp)
+                            )
+                        }
                     }
 
                     Spacer(modifier = Modifier.height(24.dp))
 
-                    // MENU LIST
-                    Text("Pengaturan Umum", fontSize = 14.sp, color = Color.Gray)
+                    // === LIST MENU ===
+                    Text("Pengaturan Umum", fontSize = 14.sp, color = Color.Gray, fontWeight = FontWeight.SemiBold)
                     Spacer(modifier = Modifier.height(8.dp))
 
-                    ProfileMenuItem(Icons.Default.AccountBalanceWallet, "Opsi Pembayaran") {
-                        // Handle Payment Options
-                    }
+                    // 1. Opsi Pembayaran (Bank)
+                    ProfileMenuItem(
+                        icon = Icons.Default.AccountBalanceWallet,
+                        title = "Opsi Pembayaran (Rekening)",
+                        onClick = onPaymentOptionClick
+                    )
                     Spacer(modifier = Modifier.height(12.dp))
 
-                    ProfileMenuItem(Icons.Default.Group, "Circle Saya") {
-//                        onCircleClick()
-                    }
+                    // 2. Circle Saya
+                    ProfileMenuItem(
+                        icon = Icons.Default.Group,
+                        title = "Circle Saya",
+                        onClick = onCircleClick
+                    )
                     Spacer(modifier = Modifier.height(12.dp))
 
-                    // TOMBOL KELUAR
-                    ProfileMenuItem(Icons.Default.ExitToApp, "Keluar", isDanger = true) {
-                        viewModel.logout() // Panggil fungsi di VM
-//                        onLogoutClick()    // Panggil callback navigasi
-                    }
+                    // 3. Keluar / Logout
+                    ProfileMenuItem(
+                        icon = Icons.Default.ExitToApp,
+                        title = "Keluar",
+                        isDanger = true,
+                        onClick = {
+                            viewModel.logout()
+                            onLogoutClick()
+                        }
+                    )
 
-                    Spacer(modifier = Modifier.height(100.dp)) // Padding bawah biar ga ketutup bottom bar
+                    Spacer(modifier = Modifier.height(100.dp)) // Padding bawah agar tidak tertutup BottomBar
                 }
             }
         } else {
+            // STATE ERROR / GAGAL LOAD
             Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                Text("Gagal memuat profil. Coba lagi.", color = Color.Gray)
-                Button(onClick = { viewModel.fetchUserProfile() }, modifier = Modifier.padding(top=8.dp)) {
-                    Text("Refresh")
+                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    Text("Gagal memuat profil.", color = Color.Gray)
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Button(
+                        onClick = { viewModel.fetchUserProfile() },
+                        colors = ButtonDefaults.buttonColors(containerColor = OrangePrimary)
+                    ) {
+                        Text("Coba Lagi")
+                    }
                 }
             }
         }
     }
 }
 
-// ... StatItem dan ProfileMenuItem SAMA seperti kodemu ...
+// --- KOMPONEN PENDUKUNG ---
+
 @Composable
 fun StatItem(count: Int, label: String, icon: ImageVector) {
     Column(horizontalAlignment = Alignment.CenterHorizontally) {
@@ -187,7 +258,7 @@ fun StatItem(count: Int, label: String, icon: ImageVector) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             Icon(imageVector = icon, contentDescription = null, tint = OrangePrimary, modifier = Modifier.size(16.dp))
             Spacer(modifier = Modifier.width(4.dp))
-            Text(count.toString(), fontWeight = FontWeight.Bold, fontSize = 14.sp)
+            Text(count.toString(), fontWeight = FontWeight.Bold, fontSize = 14.sp, color = TextPrimary)
         }
     }
 }
@@ -197,16 +268,33 @@ fun ProfileMenuItem(icon: ImageVector, title: String, isDanger: Boolean = false,
     Surface(
         shape = RoundedCornerShape(12.dp),
         color = Color.White,
-        modifier = Modifier.fillMaxWidth().height(56.dp).clickable { onClick() }
+        shadowElevation = 1.dp,
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(56.dp)
+            .clickable { onClick() }
     ) {
         Row(
             modifier = Modifier.padding(horizontal = 16.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Icon(imageVector = icon, contentDescription = null, tint = if (isDanger) Color.Red else Color.Black)
+            Icon(
+                imageVector = icon,
+                contentDescription = null,
+                tint = if (isDanger) Color.Red else Color.DarkGray
+            )
             Spacer(modifier = Modifier.width(16.dp))
-            Text(title, fontWeight = FontWeight.Medium, color = if (isDanger) Color.Red else TextPrimary, modifier = Modifier.weight(1f))
-            Icon(Icons.Default.KeyboardArrowRight, contentDescription = null, tint = Color.LightGray)
+            Text(
+                text = title,
+                fontWeight = FontWeight.Medium,
+                color = if (isDanger) Color.Red else TextPrimary,
+                modifier = Modifier.weight(1f)
+            )
+            Icon(
+                imageVector = Icons.Default.KeyboardArrowRight,
+                contentDescription = null,
+                tint = Color.LightGray
+            )
         }
     }
 }

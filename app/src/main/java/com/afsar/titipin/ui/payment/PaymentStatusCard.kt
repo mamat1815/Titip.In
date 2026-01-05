@@ -1,15 +1,12 @@
-@file:Suppress("DEPRECATION")
-
 package com.afsar.titipin.ui.payment
 
-import android.annotation.SuppressLint
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Cancel
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Error
 import androidx.compose.material.icons.filled.HourglassEmpty
-import androidx.compose.material.icons.filled.Cancel
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -25,44 +22,30 @@ import java.util.Locale
 fun PaymentStatusCard(
     amount: Double,
     status: String,
-    onPayClick: (() -> Unit)? = null,
-    @SuppressLint("ModifierParameter") modifier: Modifier = Modifier
+    onPayClick: (() -> Unit)? = null, // Callback null jika status sukses
+    modifier: Modifier = Modifier
 ) {
     val formatRp = NumberFormat.getCurrencyInstance(Locale("id", "ID"))
-    
+
+    // Tentukan Warna, Icon, dan Teks berdasarkan Status Midtrans
     val (backgroundColor, textColor, icon, statusText) = when (status.lowercase()) {
-        "success", "settlement" -> Tuple4(
-            Color(0xFFE8F5E9), 
-            Color(0xFF2E7D32),
-            Icons.Default.CheckCircle,
-            "✅ Sudah Dibayar"
+        "success", "settlement", "capture" -> PaymentStatusAttr(
+            Color(0xFFE8F5E9), Color(0xFF2E7D32), Icons.Default.CheckCircle, "Lunas"
         )
-        "pending" -> Tuple4(
-            Color(0xFFFFF3E0),
-            Color(0xFFE65100),
-            Icons.Default.HourglassEmpty,
-            "⏳ Menunggu Pembayaran"
+        "pending" -> PaymentStatusAttr(
+            Color(0xFFFFF3E0), Color(0xFFE65100), Icons.Default.HourglassEmpty, "Menunggu Pembayaran"
         )
-        "failed", "deny", "cancel" -> Tuple4(
-            Color(0xFFFFEBEE),
-            Color(0xFFC62828),
-            Icons.Default.Error,
-            "❌ Pembayaran Gagal"
+        "failed", "deny", "cancel" -> PaymentStatusAttr(
+            Color(0xFFFFEBEE), Color(0xFFC62828), Icons.Default.Error, "Gagal"
         )
-        "expired" -> Tuple4(
-            Color(0xFFF5F5F5),
-            Color(0xFF616161),
-            Icons.Default.Cancel,
-            "Kadaluarsa"
+        "expire" -> PaymentStatusAttr(
+            Color(0xFFF5F5F5), Color(0xFF616161), Icons.Default.Cancel, "Kadaluarsa"
         )
-        else -> Tuple4(
-            Color(0xFFF5F7FA),
-            Color(0xFF616161),
-            Icons.Default.HourglassEmpty,
-            "Belum Dibayar"
+        else -> PaymentStatusAttr( // Default / Belum Bayar
+            Color(0xFFF5F7FA), Color(0xFF616161), Icons.Default.HourglassEmpty, "Belum Dibayar"
         )
     }
-    
+
     Card(
         modifier = modifier.fillMaxWidth(),
         colors = CardDefaults.cardColors(containerColor = backgroundColor),
@@ -73,6 +56,7 @@ fun PaymentStatusCard(
             modifier = Modifier.padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
+            // Baris Atas: Label & Amount
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
@@ -91,7 +75,7 @@ fun PaymentStatusCard(
                         color = textColor
                     )
                 }
-                
+
                 Icon(
                     imageVector = icon,
                     contentDescription = statusText,
@@ -99,38 +83,37 @@ fun PaymentStatusCard(
                     modifier = Modifier.size(32.dp)
                 )
             }
-            
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                Text(
-                    text = statusText,
-                    fontSize = 14.sp,
-                    fontWeight = FontWeight.Medium,
-                    color = textColor
-                )
-            }
-            
-            // Show payment button if pending or failed and callback provided
-            if ((status == "pending" || status == "failed" || status == "") && onPayClick != null) {
+
+            // Baris Tengah: Status Text
+            Text(
+                text = statusText,
+                fontSize = 14.sp,
+                fontWeight = FontWeight.Medium,
+                color = textColor
+            )
+
+            // Baris Bawah: Tombol Bayar (Hanya jika belum sukses)
+            // Tampilkan tombol jika status pending, failed, atau kosong/belum bayar
+            if (status.lowercase() !in listOf("success", "settlement", "capture") && onPayClick != null) {
                 Button(
                     onClick = onPayClick,
                     modifier = Modifier.fillMaxWidth(),
                     colors = ButtonDefaults.buttonColors(
-                        containerColor = Color(0xFF2196F3)
-                    )
+                        containerColor = Color(0xFF1976D2) // Biru Midtrans
+                    ),
+                    shape = RoundedCornerShape(8.dp)
                 ) {
-                    Text("Bayar Sekarang")
+                    Text("Bayar Sekarang", fontWeight = FontWeight.Bold)
                 }
             }
         }
     }
 }
 
-private data class Tuple4<A, B, C, D>(
-    val first: A,
-    val second: B,
-    val third: C,
-    val fourth: D
+// Helper Class agar kode when lebih rapi
+private data class PaymentStatusAttr(
+    val bg: Color,
+    val text: Color,
+    val icon: androidx.compose.ui.graphics.vector.ImageVector,
+    val label: String
 )

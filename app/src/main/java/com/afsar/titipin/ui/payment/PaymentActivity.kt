@@ -7,6 +7,7 @@ import androidx.activity.compose.setContent
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.viewModels
 import androidx.compose.foundation.layout.*
+import androidx.compose.material.icons.filled.Error
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -125,7 +126,6 @@ class PaymentActivity : ComponentActivity() {
         finish()
     }
 }
-
 @Composable
 fun PaymentScreen(
     viewModel: PaymentViewModel,
@@ -134,6 +134,7 @@ fun PaymentScreen(
     amount: Long,
     userName: String,
     userEmail: String,
+    userPhone: String = "08123456789", // Default phone if empty
     onLaunchPayment: (String) -> Unit,
     onPaymentComplete: (PaymentResult) -> Unit
 ) {
@@ -141,16 +142,9 @@ fun PaymentScreen(
     val isLoading = viewModel.isLoadingToken
     val errorMessage = viewModel.errorMessage
 
-
-    // Di dalam PaymentActivity.kt -> PaymentScreen
-
+    // --- INIT PAYMENT ---
     LaunchedEffect(Unit) {
-        // --- DEBUGGING LOG ---
-        Log.d("PaymentDebug", "Sending Data to Backend:")
-        Log.d("PaymentDebug", "SessionID: '$sessionId'")
-        Log.d("PaymentDebug", "UserID: '$userId'")
-        Log.d("PaymentDebug", "Amount: $amount")
-        // ---------------------
+        Log.d("PaymentDebug", "Initiating Payment: $amount for Session $sessionId")
 
         if (sessionId.isNotBlank() && userId.isNotBlank() && amount > 0) {
             viewModel.initiatePayment(
@@ -159,14 +153,15 @@ fun PaymentScreen(
                 amount = amount,
                 userName = userName,
                 userEmail = userEmail,
-                userPhone = "08123456789"
+                userPhone = userPhone
             )
         } else {
-            Log.e("PaymentDebug", "DATA TIDAK VALID! Pembayaran dibatalkan.")
-            // Tampilkan error di layar atau Toast
+            Log.e("PaymentDebug", "INVALID DATA: Cannot start payment")
+            // Handle error, maybe viewModel.setError("Invalid Data")
         }
     }
 
+    // --- LAUNCH MIDTRANS IF TOKEN READY ---
     LaunchedEffect(snapToken) {
         if (snapToken != null) {
             onLaunchPayment(snapToken)
@@ -188,7 +183,7 @@ fun PaymentScreen(
                         verticalArrangement = Arrangement.spacedBy(16.dp)
                     ) {
                         CircularProgressIndicator()
-                        Text("Memuat halaman pembayaran...")
+                        Text("Memproses Transaksi...", style = MaterialTheme.typography.bodyLarge)
                     }
                 }
                 errorMessage != null -> {
@@ -197,22 +192,29 @@ fun PaymentScreen(
                         verticalArrangement = Arrangement.spacedBy(16.dp),
                         modifier = Modifier.padding(32.dp)
                     ) {
+                        Icon(
+                            imageVector = androidx.compose.material.icons.Icons.Default.Error, // Pastikan import Icons.Default.Error
+                            contentDescription = "Error",
+                            tint = Color.Red,
+                            modifier = Modifier.size(48.dp)
+                        )
                         Text(
-                            text = "Gagal memuat pembayaran",
+                            text = "Gagal Memulai Pembayaran",
                             style = MaterialTheme.typography.headlineSmall,
                             color = Color.Red
                         )
                         Text(
-                            text = errorMessage,
-                            style = MaterialTheme.typography.bodyMedium
+                            text = errorMessage ?: "Terjadi kesalahan tidak diketahui",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = Color.Gray
                         )
-                        Button(onClick = { onPaymentComplete(PaymentResult.Failed(errorMessage)) }) {
-                            Text("Tutup")
+                        Button(onClick = { onPaymentComplete(PaymentResult.Failed(errorMessage!!)) }) {
+                            Text("Kembali")
                         }
                     }
                 }
                 snapToken != null -> {
-                    Text("Mengarahkan ke halaman pembayaran...")
+                    Text("Mengarahkan ke Midtrans...", style = MaterialTheme.typography.bodyLarge)
                 }
             }
         }

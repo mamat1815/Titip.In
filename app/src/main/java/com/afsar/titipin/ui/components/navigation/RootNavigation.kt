@@ -17,6 +17,8 @@ import com.afsar.titipin.ui.home.WelcomeScreen
 import com.afsar.titipin.ui.home.auth.login.LoginScreen
 import com.afsar.titipin.ui.home.auth.login.LoginViewModel
 import com.afsar.titipin.ui.home.auth.register.RegisterScreen
+import com.afsar.titipin.ui.home.screens.EditProfileScreen
+import com.afsar.titipin.ui.home.screens.PaymentOptionScreen
 
 // Import LoginScreen Anda
 
@@ -89,6 +91,18 @@ fun RootNavigation() {
                         popUpTo(RootRoutes.REGISTER) { inclusive = true }
                     }
                 }
+            )
+        }
+
+        composable ( "edit_profile_screen" ){
+            EditProfileScreen(
+                onBackClick = { navController.popBackStack() }
+            )
+        }
+
+        composable ( "payment_option_screen" ){
+            PaymentOptionScreen(
+                onBackClick = { navController.popBackStack() }
             )
         }
 

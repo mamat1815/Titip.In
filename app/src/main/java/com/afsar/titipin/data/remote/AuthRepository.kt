@@ -9,6 +9,7 @@ import com.afsar.titipin.data.model.Session
 import com.afsar.titipin.data.model.PaymentInfo
 import com.afsar.titipin.data.model.User
 import com.google.firebase.auth.AuthResult
+import com.google.firebase.auth.FirebaseUser
 import kotlinx.coroutines.flow.Flow
 
 interface AuthRepository {
@@ -18,6 +19,7 @@ interface AuthRepository {
     fun register(name: String, username: String, email: String, pass: String): Flow<Result<AuthResult>>
     fun loginWithGoogle(idToken: String): Flow<Result<AuthResult>>
     fun getCurrentUserUid(): String?
+    fun getCurrentUser(): FirebaseUser?
     fun logout()
     fun getUserProfile(): Flow<Result<User>>
     fun searchUsers(query: String): Flow<Result<List<User>>>

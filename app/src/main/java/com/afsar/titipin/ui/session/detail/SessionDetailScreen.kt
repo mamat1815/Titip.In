@@ -3,26 +3,54 @@ package com.afsar.titipin.ui.session.detail
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.RowScope
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.ArrowBack
-import androidx.compose.material.icons.filled.Chat
-import androidx.compose.material.icons.filled.CheckCircle
-import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material.icons.filled.Remove
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.ExtendedFloatingActionButton
+import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.TopAppBarDefaults
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
@@ -35,16 +63,18 @@ import coil.compose.AsyncImage
 import coil.request.ImageRequest
 import com.afsar.titipin.R
 import com.afsar.titipin.data.model.Order
-import com.afsar.titipin.data.model.Session
 import com.afsar.titipin.ui.components.molecules.SessionInfoCard
 import com.afsar.titipin.ui.components.molecules.SessionProgressBar
 import com.afsar.titipin.ui.theme.OrangePrimary
+
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SessionDetailScreen(
     onBackClick: () -> Unit,
-    onGoToShoppingList: (String) -> Unit, // Navigasi ke halaman belanja/pembayaran
+    onGoToShoppingList: (String) -> Unit,
+    onGoToPayment: (String) -> Unit,
+    onGoToHome: () -> Unit,
     viewModel: SessionDetailViewModel = hiltViewModel()
 ) {
     val session = viewModel.sessionState
@@ -52,28 +82,41 @@ fun SessionDetailScreen(
     val currentUser = viewModel.currentUserId
     val isLoading = viewModel.isLoading
 
-    // Cek Role & Status
     val isCreator = session?.creatorId == currentUser
-    val isSessionOpen = session?.status == "open"
+    var icSesi = R.drawable.ic_sesi
+    if (isCreator) {
+        icSesi = R.drawable.ic_sesi
+    } else {
 
-    // --- LOGIKA AUTO-REDIRECT ---
-    // Jika status sesi berubah jadi "shopping" atau "closed", otomatis pindah ke ShoppingListScreen
-    LaunchedEffect(session) {
-        if (session != null) {
-            val shouldRedirect = session.status == "shopping" || session.status == "closed"
-            if (shouldRedirect) {
-                onGoToShoppingList(session.id)
-            }
-        }
+        icSesi = R.drawable.ic_titip
     }
 
-    // State Dialog Tambah Order (Hanya Guest)
+    val status = session?.status ?: "open"
+    val isSessionOpen = status == "open"
+
+    val currentStep = when (status) {
+        "open" -> 1
+        "shopping" -> 2
+        "settling" -> 3
+        else -> 1
+    }
+
+
+    val remainingSeconds = remember(session) {
+        if (session != null) viewModel.getRemainingTimeInSeconds(session) else 0L
+    }
+
     var showAddOrderDialog by remember { mutableStateOf(false) }
 
     if (showAddOrderDialog) {
         AddOrderDialog(
             onDismiss = { showAddOrderDialog = false },
-            onSubmit = { viewModel.createOrder(onSuccess = { showAddOrderDialog = false }) },
+            onSubmit = {
+                viewModel.createOrder(onSuccess = {
+                    showAddOrderDialog = false
+                    viewModel.resetOrderForm()
+                })
+            },
             itemName = viewModel.orderItemName,
             onNameChange = { viewModel.orderItemName = it },
             quantity = viewModel.orderQuantity,
@@ -82,30 +125,38 @@ fun SessionDetailScreen(
             onPriceChange = { viewModel.orderPriceEstimate = it },
             notes = viewModel.orderNotes,
             onNotesChange = { viewModel.orderNotes = it },
+            deliveryLocation = viewModel.orderDeliveryLocation,
+            onLocationChange = { viewModel.orderDeliveryLocation = it },
             isLoading = viewModel.isLoading
         )
     }
-
-    val BgColor = Color(0xFFF9FAFB)
 
     Scaffold(
         topBar = {
             TopAppBar(
                 title = {
-                    Text(
-                        text = if (isCreator) "Kelola Permintaan" else "Detail Sesi",
-                        fontWeight = FontWeight.Bold,
-                        fontSize = 18.sp
-                    )
+                    Column {
+                        Text(
+                            text = if (isCreator) "Kelola Sesi" else "Detail Sesi",
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 18.sp
+                        )
+                        if (session != null) {
+                            Text(
+                                text = "Tujuan: ${session.locationName}",
+                                fontSize = 12.sp,
+                                color = Color.Gray
+                            )
+                        }
+                    }
                 },
                 navigationIcon = {
-                    IconButton(onClick = onBackClick) { Icon(Icons.Default.ArrowBack, "Back") }
+                    IconButton(onClick = onBackClick) { Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back") }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.White)
             )
         },
         floatingActionButton = {
-            // FAB: Hanya untuk Guest & Sesi Masih Buka
             if (!isCreator && isSessionOpen) {
                 ExtendedFloatingActionButton(
                     onClick = { showAddOrderDialog = true },
@@ -117,38 +168,51 @@ fun SessionDetailScreen(
             }
         },
         bottomBar = {
-            // Bottom Bar: Hanya untuk Host & Sesi Masih Buka
-            if (isCreator && isSessionOpen) {
-                Surface(shadowElevation = 16.dp, color = Color.White) {
-                    Button(
-                        onClick = {
-                            // UPDATE STATUS KE 'shopping' LALU NAVIGASI
-                            viewModel.startShopping {
-                                session?.let { onGoToShoppingList(it.id) }
-                            }
-                        },
-                        enabled = viewModel.isReadyToShop && !isLoading, // Aktif jika ada min 1 order diterima
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(16.dp)
-                            .height(52.dp),
-                        colors = ButtonDefaults.buttonColors(
-                            containerColor = OrangePrimary,
-                            disabledContainerColor = Color(0xFFFFA056),
-                            disabledContentColor = Color.White
-                        ),
-                        shape = RoundedCornerShape(100)
-                    ) {
-                        if (isLoading) {
-                            CircularProgressIndicator(color = Color.White, modifier = Modifier.size(24.dp))
-                        } else {
-                            Text("Selesaikan & Mulai Belanja", fontWeight = FontWeight.Bold, fontSize = 16.sp)
+            Surface(shadowElevation = 16.dp, color = Color.White) {
+                Column(modifier = Modifier.padding(16.dp)) {
+
+                    if (isCreator && isSessionOpen) {
+                        Button(
+                            onClick = {
+                                viewModel.startShopping {
+                                    onGoToShoppingList(session.id)
+                                }
+                            },
+                            enabled = viewModel.isReadyToShop && !isLoading,
+                            modifier = Modifier.fillMaxWidth().height(50.dp),
+                            colors = ButtonDefaults.buttonColors(containerColor = OrangePrimary),
+                            shape = RoundedCornerShape(100)
+                        ) {
+                            if (isLoading) CircularProgressIndicator(color = Color.White, modifier = Modifier.size(24.dp))
+                            else Text("Tutup Order & Mulai Belanja", fontWeight = FontWeight.Bold)
+                        }
+                    }
+
+                    else if (isCreator && (status == "shopping" || status == "settling")) {
+                        Button(
+                            onClick = { onGoToShoppingList(session.id) },
+                            modifier = Modifier.fillMaxWidth().height(50.dp),
+                            colors = ButtonDefaults.buttonColors(containerColor = OrangePrimary),
+                            shape = RoundedCornerShape(100)
+                        ) {
+                            Text("Buka Daftar Belanja", fontWeight = FontWeight.Bold)
+                        }
+                    }
+
+                    else if (!isCreator && (status == "settling" || status == "closed")) {
+                        Button(
+                            onClick = { onGoToPayment(session!!.id) },
+                            modifier = Modifier.fillMaxWidth().height(50.dp),
+                            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF2E7D32)),
+                            shape = RoundedCornerShape(100)
+                        ) {
+                            Text("Rincian Pembayaran", fontWeight = FontWeight.Bold)
                         }
                     }
                 }
             }
         },
-        containerColor = BgColor
+        containerColor = Color(0xFFF9FAFB)
     ) { padding ->
 
         if (session == null) {
@@ -156,7 +220,6 @@ fun SessionDetailScreen(
         } else {
             Column(modifier = Modifier.padding(padding).fillMaxSize()) {
 
-                // --- HEADER SECTION (White Background) ---
                 Column(
                     modifier = Modifier
                         .background(Color.White)
@@ -165,34 +228,42 @@ fun SessionDetailScreen(
                     Column(modifier = Modifier.padding(horizontal = 16.dp)) {
                         Spacer(modifier = Modifier.height(16.dp))
 
-                        // 1. PROGRESS BAR
-                        val instruction = if (isCreator)
-                            "Seleksi permintaan titipan yang masuk sebelum mulai belanja."
-                        else
-                            "Masukkan daftar barang yang ingin kamu titip ke temanmu."
-
                         SessionProgressBar(
-                            currentStep = 1,
-                            instructionText = instruction,
-                            iconRes = R.drawable.ic_sesi
+                            currentStep = currentStep,
+                            instructionText = if (isCreator) "Pantau status sesi." else "Cek status titipanmu.",
+                            iconRes = icSesi,
+                            onStepClick = { clickedStep ->
+                                when (clickedStep) {
+                                    1 -> { }
+                                    2 -> {
+                                        if (status != "open") onGoToShoppingList(session.id)
+                                    }
+//                                    3, 4 -> {
+//                                        if (isCreator) {
+//                                            onGoToShoppingList(session.id)
+//                                        } else {
+//                                            onGoToPayment(session.id)
+//                                        }
+                                    3, -> {
+                                        if (status != "open" && status != "shopping") onGoToPayment(session.id)
+                                    }
+                                }
+                            }
                         )
 
                         Spacer(modifier = Modifier.height(16.dp))
 
-                        // 2. INFO SESSION CARD
                         SessionInfoCard(
                             title = session.title,
                             description = session.description,
-                            iconRes = R.drawable.ic_makanan, // TODO: Map kategori
-                            durationSeconds = 1800, // TODO: Hitung sisa waktu di VM
+                            iconRes = R.drawable.ic_makanan,
+                            durationSeconds = remainingSeconds.toInt(),
                             showTimer = true,
-                            onChatClick = null // Chat dimatikan di fase ini
+                            onChatClick = null
                         )
-
                         Spacer(modifier = Modifier.height(16.dp))
                     }
 
-                    // 3. TABS (KHUSUS HOST)
                     if (isCreator) {
                         Row(modifier = Modifier.fillMaxWidth()) {
                             TitipinTabItem("Menunggu (${viewModel.pendingCount})", isSelected = viewModel.selectedTabIndex == 0) { viewModel.selectedTabIndex = 0 }
@@ -201,7 +272,6 @@ fun SessionDetailScreen(
                         }
                         HorizontalDivider(color = Color.LightGray, thickness = 0.5.dp)
                     } else {
-                        // Header Guest
                         Text(
                             "Daftar Titipan Saya",
                             fontWeight = FontWeight.Bold,
@@ -210,15 +280,11 @@ fun SessionDetailScreen(
                     }
                 }
 
-                // --- LIST CONTENT ---
                 LazyColumn(
                     modifier = Modifier.weight(1f),
                     contentPadding = PaddingValues(16.dp),
                     verticalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
-                    // Tentukan List mana yang ditampilkan
-                    // Host: List difilter berdasarkan Tab
-                    // Guest: List semua order miliknya
                     val listToShow = if (isCreator) {
                         viewModel.displayedOrdersForHost
                     } else {
@@ -229,7 +295,7 @@ fun SessionDetailScreen(
                         item {
                             Box(modifier = Modifier.fillMaxWidth().padding(top = 40.dp), contentAlignment = Alignment.Center) {
                                 Text(
-                                    text = if (isCreator) "Tidak ada permintaan di tab ini" else "Belum ada titipan",
+                                    text = if (isCreator) "Tidak ada permintaan di tab ini" else "Belum ada titipan.",
                                     color = Color.Gray
                                 )
                             }
@@ -245,16 +311,11 @@ fun SessionDetailScreen(
                             )
                         }
                     }
-
-                    // Spacer bawah agar tidak ketutup FAB/BottomBar
-                    item { Spacer(modifier = Modifier.height(100.dp)) }
                 }
             }
         }
     }
 }
-
-// --- COMPONENTS ---
 
 @Composable
 fun AddOrderDialog(
@@ -264,6 +325,7 @@ fun AddOrderDialog(
     quantity: Int, onQtyChange: (Int) -> Unit,
     price: String, onPriceChange: (String) -> Unit,
     notes: String, onNotesChange: (String) -> Unit,
+    deliveryLocation: String, onLocationChange: (String) -> Unit,
     isLoading: Boolean
 ) {
     AlertDialog(
@@ -300,6 +362,16 @@ fun AddOrderDialog(
 
                 Spacer(modifier = Modifier.height(8.dp))
                 OutlinedTextField(
+                    value = deliveryLocation,
+                    onValueChange = onLocationChange,
+                    label = { Text("Lokasi Pengantaran (Gedung/Lantai)") },
+                    placeholder = { Text("Cth: Gedung FTI Lt. 2") },
+                    modifier = Modifier.fillMaxWidth(),
+                    trailingIcon = { Icon(Icons.Default.LocationOn, null) }
+                )
+
+                Spacer(modifier = Modifier.height(8.dp))
+                OutlinedTextField(
                     value = notes,
                     onValueChange = onNotesChange,
                     label = { Text("Catatan (Warna/Rasa/dll)") },
@@ -308,7 +380,10 @@ fun AddOrderDialog(
             }
         },
         confirmButton = {
-            Button(onClick = onSubmit, enabled = !isLoading) {
+            Button(
+                onClick = onSubmit,
+                enabled = !isLoading && deliveryLocation.isNotBlank() && itemName.isNotBlank()
+            ) {
                 if (isLoading) CircularProgressIndicator(modifier = Modifier.size(24.dp), color = Color.White)
                 else Text("Kirim Titipan")
             }
@@ -319,17 +394,6 @@ fun AddOrderDialog(
     )
 }
 
-@Composable
-fun HeaderSessionCard(session: Session) {
-    // ... (Kode HeaderSessionCard lama, jika ingin dipertahankan untuk debug/legacy) ...
-    // Tapi di kode utama di atas kita sudah pakai SessionInfoCard yang baru.
-}
-
-@Composable
-fun TimerSection(timeString: String, isRevision: Boolean, showFinishButton: Boolean, onFinishClick: () -> Unit) {
-    // ... (Kode TimerSection lama) ...
-    // Di kode utama di atas, fungsi timer sudah dihandle oleh SessionInfoCard.
-}
 
 @Composable
 fun RequestItemCard(
@@ -349,7 +413,6 @@ fun RequestItemCard(
     ) {
         Column(modifier = Modifier.padding(12.dp)) {
 
-            // 1. HEADER (Profil & Lokasi)
             Row(verticalAlignment = Alignment.CenterVertically) {
                 AsyncImage(
                     model = ImageRequest.Builder(LocalContext.current)
@@ -389,7 +452,6 @@ fun RequestItemCard(
             HorizontalDivider(thickness = 0.5.dp, color = Color.LightGray)
             Spacer(modifier = Modifier.height(8.dp))
 
-            // 2. DAFTAR BARANG
             Text("Daftar Titipan:", fontWeight = FontWeight.Bold, fontSize = 12.sp, modifier = Modifier.padding(bottom = 6.dp))
 
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -428,7 +490,6 @@ fun RequestItemCard(
                 Spacer(modifier = Modifier.height(12.dp))
             }
 
-            // 3. TOMBOL AKSI
             if (isCreator && order.status == "pending") {
                 Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                     OutlinedButton(
@@ -471,7 +532,6 @@ fun RequestItemCard(
     }
 }
 
-// --- TAB ITEM COMPONENT ---
 @Composable
 fun RowScope.TitipinTabItem(text: String, isSelected: Boolean, onClick: () -> Unit) {
     Column(

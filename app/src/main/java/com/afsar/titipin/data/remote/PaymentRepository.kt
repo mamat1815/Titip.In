@@ -58,4 +58,5 @@ interface PaymentRepository {
     ): Flow<Result<DisbursementResponse>>
     fun getDisbursementBySession(sessionId: String): Flow<Result<DisbursementInfo?>>
 
+    fun getUserPaymentStatus(sessionId: String, userId: String): Flow<Result<String>> // return status: "success", "pending", "none"
 }

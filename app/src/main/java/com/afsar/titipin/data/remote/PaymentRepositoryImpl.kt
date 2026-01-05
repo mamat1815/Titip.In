@@ -153,4 +153,32 @@ class PaymentRepositoryImpl @Inject constructor(
             }
         awaitClose { listener.remove() }
     }
+
+    override fun getUserPaymentStatus(sessionId: String, userId: String): Flow<Result<String>> = callbackFlow {
+        // Cari dokumen di collection 'payments' yang cocok
+        val query = firestore.collection("payments")
+            .whereEqualTo("sessionId", sessionId)
+            .whereEqualTo("userId", userId)
+            // Urutkan dari yang terbaru (opsional, tapi bagus kalau ada multiple attempts)
+            // .orderBy("createdAt", Query.Direction.DESCENDING)
+            .limit(1)
+
+        val listener = query.addSnapshotListener { snapshot, error ->
+            if (error != null) {
+                trySend(Result.failure(error))
+                return@addSnapshotListener
+            }
+
+            if (snapshot != null && !snapshot.isEmpty) {
+                // Ambil status dari dokumen pembayaran terakhir
+                val status = snapshot.documents[0].getString("status") ?: "none"
+                trySend(Result.success(status))
+            } else {
+                // Belum ada data pembayaran
+                trySend(Result.success("none"))
+            }
+        }
+
+        awaitClose { listener.remove() }
+    }
 }

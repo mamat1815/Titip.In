@@ -21,11 +21,15 @@ import com.afsar.titipin.ui.circle.detail.CircleDetailScreen
 import com.afsar.titipin.ui.components.navigation.BottomBarScreen
 import com.afsar.titipin.ui.components.navigation.DetailRoutes
 import com.afsar.titipin.ui.components.navigation.MainBottomNav
+import com.afsar.titipin.ui.components.navigation.ProfileRoutes
 import com.afsar.titipin.ui.components.navigation.SessionRoutes
 import com.afsar.titipin.ui.home.screens.CircleScreen
+import com.afsar.titipin.ui.home.screens.EditProfileScreen
 import com.afsar.titipin.ui.home.screens.HomeScreen
+import com.afsar.titipin.ui.home.screens.PaymentOptionScreen
 import com.afsar.titipin.ui.home.screens.ProfileScreen
 import com.afsar.titipin.ui.home.screens.SessionScreen
+import com.afsar.titipin.ui.payment.PaymentDetailScreen
 import com.afsar.titipin.ui.session.add.CreateSessionScreens
 @Composable
 fun MainAppNav(
@@ -44,6 +48,9 @@ fun MainAppNav(
         DetailRoutes.CIRCLE_LIST,
         BottomBarScreen.Profile.route
     )
+
+
+//    Intent
 
     Scaffold(
         bottomBar = {
@@ -82,15 +89,20 @@ fun MainAppNav(
                     )
                 }
 
-                // ... detail & shopping list sama ...
                 composable(
                     route = SessionRoutes.SESSION_DETAIL,
                     arguments = listOf(navArgument("sessionId"){type= NavType.StringType})
                 ) {
                     SessionDetailScreen(
-                        onBackClick = { navController.popBackStack() },
+                        onBackClick = { navController.popBackStack(BottomBarScreen.Home.route, inclusive = true) },
                         onGoToShoppingList = { sessionId ->
                             navController.navigate(SessionRoutes.createShoppingListRoute(sessionId))
+                        },
+                        onGoToPayment = { sessionId ->
+                            navController.navigate(SessionRoutes.createPaymentRoute(sessionId))
+                        },
+                        onGoToHome = {
+                            navController.popBackStack(BottomBarScreen.Home.route, inclusive = true)
                         }
                     )
                 }
@@ -100,7 +112,13 @@ fun MainAppNav(
                     arguments = listOf(navArgument("sessionId") { type = NavType.StringType })
                 ) {
                     ShoppingListScreen(
-                        onBackClick = { navController.popBackStack() }
+                        onBackClick = { navController.popBackStack(SessionRoutes.SESSION_DETAIL, inclusive = true) },
+                        onGoToPaymentDetail = { sessionId ->
+                            navController.navigate(SessionRoutes.createPaymentRoute(sessionId))
+                        },
+                        onGoToDetailSession = {
+                            navController.navigate(SessionRoutes.createSessionDetailRoute(it))
+                        }
                     )
                 }
             }
@@ -151,23 +169,58 @@ fun MainAppNav(
                         }
                     )
                 }
+                // Tambahkan ini jika belum ada
+                composable(
+                    route = SessionRoutes.PAYMENT_DETAIL,
+                    arguments = listOf(navArgument("sessionId") { type = NavType.StringType })
+                ) {
+                    // Import PaymentDetailScreen
+                    PaymentDetailScreen(
+                        onBackClick = { navController.popBackStack(SessionRoutes.SHOPPING_LIST, inclusive = true) },
+                        onGoToDetailSession = { sessionId ->
+                            navController.navigate(SessionRoutes.createSessionDetailRoute(sessionId))
+                        },
+                        onGoToShoppingList = { sessionId ->
+                            navController.navigate(SessionRoutes.createShoppingListRoute(sessionId))
+                        }
+                    )
+                }
             }
 
             // 4. PROFILE TAB (REVISI: Uncomment Logout)
+            // ... di dalam MainAppNav.kt ...
+
             composable(BottomBarScreen.Profile.route) {
                 ProfileScreen(
-                    // REVISI: Nyalakan fungsi Logout
-//                    onLogoutClick = onLogOut,
+                    onEditProfileClick = {
+                        // Arahkan ke route edit profile
+                        navController.navigate(ProfileRoutes.EDIT_PROFILE)
+                    },
+                    onPaymentOptionClick = {
+                        // Arahkan ke route payment option (INI YANG BIKIN CRASH SEBELUMNYA)
+                        navController.navigate(ProfileRoutes.PAYMENT_OPTION)
+                    },
+                    onCircleClick = {
+                        navController.navigate(BottomBarScreen.Circles.route) {
+                            popUpTo(navController.graph.startDestinationId) { saveState = true }
+                            launchSingleTop = true
+                            restoreState = true
+                        }
+                    },
+                    onLogoutClick = onLogOut
+                )
 
-                    // Jika fitur ini belum siap, boleh dikomentari.
-                    // Tapi Logout wajib nyala.
-//                    onCircleClick = {
-//                        navController.navigate(BottomBarScreen.Circles.route) {
-//                            popUpTo(navController.graph.startDestinationId) { saveState = true }
-//                            launchSingleTop = true
-//                            restoreState = true
-//                        }
-//                    }
+            }
+            composable(ProfileRoutes.EDIT_PROFILE) {
+                EditProfileScreen(
+                    onBackClick = { navController.popBackStack() }
+                )
+            }
+
+            // 2. Destinasi Payment Option
+            composable(ProfileRoutes.PAYMENT_OPTION) {
+                PaymentOptionScreen(
+                    onBackClick = { navController.popBackStack() }
                 )
             }
         }

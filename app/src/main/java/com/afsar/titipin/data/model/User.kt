@@ -28,6 +28,8 @@ data class Stats(
     val totalTitip: Int = 0,
     val totalSesi: Int = 0,
     val totalCircle: Int = 0,
+    val totalIncome: Double = 0.0,
+    val totalExpense: Double = 0.0
 ): Parcelable
 
 
