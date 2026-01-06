@@ -80,54 +80,54 @@ fun CircleItem(group: CircleGroup, onClick: () -> Unit) {
         }
     }
 }
-
-// 2. CHAT BUBBLE (Untuk Halaman Chat)
-@Composable
-fun ChatBubble(message: ChatMessages) {
-    val alignment = if (message.isMe) Alignment.End else Alignment.Start
-    val bubbleColor = Color.White
-    val textColor = TextPrimary
-
-    Column(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalAlignment = alignment
-    ) {
-
-        if (!message.isMe) {
-            Text(message.senderName, fontSize = 12.sp, fontWeight = FontWeight.Bold, color = TextPrimary, modifier = Modifier.padding(start = 52.dp, bottom = 4.dp))
-        }
-
-        Row(verticalAlignment = Alignment.Top) {
-
-            if (!message.isMe) {
-                Image(
-                    painter = painterResource(id = message.avatarRes),
-                    contentDescription = null,
-                    modifier = Modifier.size(40.dp).clip(CircleShape),
-                    contentScale = ContentScale.Crop
-                )
-                Spacer(modifier = Modifier.width(8.dp))
-            }
-
-            // Bubble
-            Surface(
-                color = bubbleColor,
-                shape = if (message.isMe) RoundedCornerShape(16.dp, 16.dp, 4.dp, 16.dp)
-                else RoundedCornerShape(16.dp, 16.dp, 16.dp, 4.dp),
-                shadowElevation = 1.dp,
-                modifier = Modifier.widthIn(max = 280.dp)
-            ) {
-                Text(
-                    text = message.text,
-                    modifier = Modifier.padding(12.dp),
-                    color = textColor,
-                    fontSize = 14.sp
-                )
-            }
-        }
-        Spacer(modifier = Modifier.height(12.dp))
-    }
-}
+//
+//// 2. CHAT BUBBLE (Untuk Halaman Chat)
+//@Composable
+//fun ChatBubble(message: ChatMessages) {
+//    val alignment = if (message.isMe) Alignment.End else Alignment.Start
+//    val bubbleColor = Color.White
+//    val textColor = TextPrimary
+//
+//    Column(
+//        modifier = Modifier.fillMaxWidth(),
+//        horizontalAlignment = alignment
+//    ) {
+//
+//        if (!message.isMe) {
+//            Text(message.senderName, fontSize = 12.sp, fontWeight = FontWeight.Bold, color = TextPrimary, modifier = Modifier.padding(start = 52.dp, bottom = 4.dp))
+//        }
+//
+//        Row(verticalAlignment = Alignment.Top) {
+//
+//            if (!message.isMe) {
+//                Image(
+//                    painter = painterResource(id = message.avatarRes),
+//                    contentDescription = null,
+//                    modifier = Modifier.size(40.dp).clip(CircleShape),
+//                    contentScale = ContentScale.Crop
+//                )
+//                Spacer(modifier = Modifier.width(8.dp))
+//            }
+//
+//            // Bubble
+//            Surface(
+//                color = bubbleColor,
+//                shape = if (message.isMe) RoundedCornerShape(16.dp, 16.dp, 4.dp, 16.dp)
+//                else RoundedCornerShape(16.dp, 16.dp, 16.dp, 4.dp),
+//                shadowElevation = 1.dp,
+//                modifier = Modifier.widthIn(max = 280.dp)
+//            ) {
+//                Text(
+//                    text = message.text,
+//                    modifier = Modifier.padding(12.dp),
+//                    color = textColor,
+//                    fontSize = 14.sp
+//                )
+//            }
+//        }
+//        Spacer(modifier = Modifier.height(12.dp))
+//    }
+//}
 
 // 3. CONTACT ITEM (Untuk Halaman Create Circle)
 @Composable

@@ -34,6 +34,9 @@ object DetailRoutes {
     const val CIRCLE_LIST = "circle_list_screen"
     const val CIRCLE_ADD = "circle_add_screen"
     const val CIRCLE_DETAIL = "circle_detail/{circleId}"
+    const val CHAT_CIRCLE = "chat_circle/{circleId}"
+
+    fun createChatCircleRoute(id: String) = "chat_circle/$id"
     fun createCircleDetailRoute(id: String) = "circle_detail/$id"
 }
 object ProfileRoutes {

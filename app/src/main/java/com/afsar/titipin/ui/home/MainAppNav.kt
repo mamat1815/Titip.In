@@ -23,6 +23,7 @@ import com.afsar.titipin.ui.components.navigation.DetailRoutes
 import com.afsar.titipin.ui.components.navigation.MainBottomNav
 import com.afsar.titipin.ui.components.navigation.ProfileRoutes
 import com.afsar.titipin.ui.components.navigation.SessionRoutes
+import com.afsar.titipin.ui.home.screens.ChatCircleScreen
 import com.afsar.titipin.ui.home.screens.CircleScreen
 import com.afsar.titipin.ui.home.screens.EditProfileScreen
 import com.afsar.titipin.ui.home.screens.HomeScreen
@@ -140,6 +141,10 @@ fun MainAppNav(
             ) {
                 composable(DetailRoutes.CIRCLE_LIST) {
                     CircleScreen(
+
+                        onCircleClick = { circleId ->
+                            navController.navigate(DetailRoutes.createChatCircleRoute(circleId))
+                        },
                         // REVISI: Nyalakan kembali navigasi ini
 //                        onAddCircleClick = {
 //                            navController.navigate(DetailRoutes.CIRCLE_ADD)
@@ -147,6 +152,28 @@ fun MainAppNav(
 //                        onCircleItemClick = { circle ->
 //                            navController.navigate(DetailRoutes.createCircleDetailRoute(circle.id))
 //                        },
+                    )
+                }
+
+//                composable(
+//                    route = "chat_circle/{circleId}", // Definisi URL dengan parameter
+//                    arguments = listOf(
+//                        navArgument("circleId") { type = NavType.StringType }
+//                    )
+//                ) {
+//                    // Hilt akan otomatis mengambil 'circleId' dari arguments
+//                    // dan menyuntikkannya ke SavedStateHandle di ViewModel
+//                    ChatCircleScreen(
+//                        onBackClick = { navController.popBackStack() }
+//                    )
+//                }
+
+                composable (
+                    route = DetailRoutes.CHAT_CIRCLE,
+                    arguments = listOf(navArgument("circleId") { type = NavType.StringType })
+                ){
+                    ChatCircleScreen(
+                        onBackClick = { navController.popBackStack() }
                     )
                 }
 

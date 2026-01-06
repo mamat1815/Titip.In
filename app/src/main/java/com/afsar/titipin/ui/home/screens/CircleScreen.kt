@@ -55,6 +55,7 @@ import java.util.Locale
 @Composable
 fun CircleScreen(
     // navController: NavController, // Aktifkan jika sudah siap navigasi
+    onCircleClick: (String) -> Unit,
     viewModel: CircleListViewModel = hiltViewModel()
 ) {
     val circles = viewModel.circles
@@ -132,6 +133,7 @@ fun CircleScreen(
                             CircleItem(group = group) {
                                 // TODO: Navigasi ke Detail
                                 // navController.navigate(Screen.ChatDetail.createRoute(group.id))
+                                onCircleClick(group.id)
                             }
                         }
                     }

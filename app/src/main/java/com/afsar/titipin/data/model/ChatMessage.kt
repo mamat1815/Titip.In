@@ -5,6 +5,8 @@ import com.google.firebase.Timestamp
 import com.google.firebase.firestore.DocumentId
 import com.google.firebase.firestore.ServerTimestamp
 import kotlinx.parcelize.Parcelize
+import java.text.SimpleDateFormat
+import java.util.Locale
 
 @Parcelize
 data class ChatMessage(
@@ -21,13 +23,31 @@ data class ChatMessage(
 
 
 data class ChatMessages(
-    val id: String,
-    val senderName: String,
-    val text: String,
-    val timestamp: String,
-    val isMe: Boolean, // True jika pesan dari kita (posisi kanan)
-    val avatarRes: Int
-)
+    val id: String = "",
+    val senderId: String = "",
+    val senderName: String = "",
+    val avatarUrl: String = "",
+    val message: String = "",
+    val createdAt: Timestamp? = null // Field asli dari Firestore
+) {
+    // Helper: Konversi Timestamp ke String Jam (contoh: "14:30")
+    // Property ini yang akan dipanggil oleh UI
+    val timestamp: String
+        get() {
+            if (createdAt == null) return ""
+            val sdf = SimpleDateFormat("HH:mm", Locale.getDefault())
+            return sdf.format(createdAt.toDate())
+        }
+}
+//
+//data class ChatMessages(
+//    val id: String,
+//    val senderName: String,
+//    val text: String,
+//    val timestamp: String,
+//    val isMe: Boolean, // True jika pesan dari kita (posisi kanan)
+//    val avatarRes: Int
+//)
 
 data class CircleGroup(
     val id: String,
